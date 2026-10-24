@@ -1,0 +1,23 @@
+<!DOCTYPE html><html lang="en"><head>
+<script src="/js/session.js"></script><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Safe WorkChat - Calendar</title>
+<link rel="stylesheet" href="/vendor/bootstrap.min.css"><link rel="stylesheet" href="/vendor/all.min.css"><link rel="stylesheet" href="/css/app.css"><link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+<script src="/js/avatar.js"></script>
+</head><body><div class="app"><aside class="sb"><div class="brand"><img src="/images/logo.svg" alt=""><div>Safe WorkChat<small>Secure Conversations</small></div></div>
+<a href="/pages/dashboard.html" data-n="dashboard"><i class="fas fa-home"></i>Home</a>
+<a href="/pages/chat.html"><i class="fas fa-comment-dots"></i>Chats</a>
+<a href="/pages/groups.html"><i class="fas fa-users"></i>Groups</a>
+<a href="/pages/friends.html"><i class="fas fa-user-friends"></i>Friends</a>
+<a href="/pages/tasks.html" data-n="tasks"><i class="fas fa-tasks"></i>Tasks</a>
+<a href="/pages/documents.html"><i class="fas fa-file-alt"></i>Documents</a>
+<a href="/pages/calendar.html" class="active"><i class="fas fa-calendar-alt"></i>Calendar</a>
+<div class="sp"></div><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i>Logout</a></aside><div class="mn"><div class="tb"><div class="search"><i class="fas fa-search"></i><input placeholder="Search chats, groups, or people..."></div><div class="conn">Connected to local MongoDB</div></div><div class="pg">
+<div class="cal-h"><h5 class="mb-0 fw-bold" style="flex:1">Calendar <small class="text-muted fw-normal ms-1">your tasks only</small></h5><button class="btn btn-outline-secondary btn-sm" id="exportIcs"><i class="fas fa-download"></i> .ics</button> <button class="btn btn-success btn-sm d-none" id="newTaskBtn"><i class="fas fa-plus"></i> New Task</button></div>
+<div class="flt"><span>Group:</span><select id="groupFilter"><option value="">All Groups</option></select><span>Role:</span><select id="roleFilter"><option value="">All Roles</option><option>Admin</option><option>Manager</option><option>Member</option></select><span>Priority:</span><select id="prioFilter"><option value="">All Priorities</option><option>High</option><option>Medium</option><option>Low</option></select></div>
+<div class="cal2"><div class="cd"><div class="cal-h"><button class="ar" id="prevMonth"><i class="fas fa-chevron-left"></i></button><h6 id="monthLabel"></h6><button class="ar" id="nextMonth"><i class="fas fa-chevron-right"></i></button><button class="btn btn-outline-secondary btn-sm ms-auto" id="todayBtn">Today</button></div>
+<div class="dow"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div><div class="days" id="calGrid"></div></div>
+<div class="cd det"><h6>Task Details</h6><div id="dayTasks" class="small text-muted">Select a date.</div></div></div></div></div></div>
+<div class="modal fade" id="taskModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Create Task</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div id="taskError" class="alert alert-danger d-none"></div>
+<div class="mb-2"><label class="form-label">Group</label><select id="tGroup" class="form-select"></select></div><div class="mb-2"><label class="form-label">Title</label><input id="tTitle" class="form-control" maxlength="120"></div><div class="mb-2"><label class="form-label">Description</label><textarea id="tDesc" class="form-control" rows="2"></textarea></div>
+<div class="row g-2"><div class="col-6"><label class="form-label">Assign to</label><select id="tAssignee" class="form-select"></select></div><div class="col-6"><label class="form-label">Priority</label><select id="tPriority" class="form-select"><option>Low</option><option selected>Medium</option><option>High</option></select></div></div>
+<div class="mt-2"><label class="form-label">Due</label><input id="tDue" type="datetime-local" class="form-control"></div></div><div class="modal-footer"><button class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button id="saveTask" class="btn btn-success">Create</button></div></div></div></div>
+<script src="/vendor/bootstrap.bundle.min.js"></script><script src="/vendor/socket.io.min.js"></script><script src="/js/calendar.js"></script><script src="/js/nav.js"></script></body></html>

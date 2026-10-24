@@ -1,0 +1,19 @@
+<svg viewBox="0 0 420 270" xmlns="http://www.w3.org/2000/svg" fill="none">
+  <rect x="40" y="28" width="250" height="170" rx="14" fill="#fff" opacity=".12"/>
+  <rect x="40" y="28" width="250" height="26" rx="14" fill="#fff" opacity=".16"/>
+  <circle cx="58" cy="41" r="4" fill="#fff" opacity=".5"/><circle cx="72" cy="41" r="4" fill="#fff" opacity=".5"/><circle cx="86" cy="41" r="4" fill="#fff" opacity=".5"/>
+  <circle cx="68" cy="80" r="11" fill="#7be3b4"/><rect x="88" y="70" width="120" height="20" rx="10" fill="#fff" opacity=".85"/>
+  <rect x="150" y="104" width="112" height="20" rx="10" fill="#2fd488"/><circle cx="272" cy="114" r="11" fill="#ffd27a"/>
+  <circle cx="68" cy="144" r="11" fill="#9fc4ff"/><rect x="88" y="134" width="90" height="20" rx="10" fill="#fff" opacity=".85"/>
+  <rect x="88" y="164" width="150" height="20" rx="10" fill="#fff" opacity=".35"/>
+  <rect x="250" y="120" width="140" height="120" rx="14" fill="#fff" opacity=".16"/>
+  <rect x="264" y="136" width="14" height="14" rx="4" fill="#2fd488"/><path d="m267 143 3 3 5-6" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="286" y="139" width="86" height="8" rx="4" fill="#fff" opacity=".8"/>
+  <rect x="264" y="162" width="14" height="14" rx="4" fill="#2fd488"/><path d="m267 169 3 3 5-6" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="286" y="165" width="62" height="8" rx="4" fill="#fff" opacity=".8"/>
+  <rect x="264" y="188" width="14" height="14" rx="4" fill="#fff" opacity=".35"/><rect x="286" y="191" width="74" height="8" rx="4" fill="#fff" opacity=".45"/>
+  <rect x="264" y="214" width="14" height="14" rx="4" fill="#fff" opacity=".35"/><rect x="286" y="217" width="48" height="8" rx="4" fill="#fff" opacity=".45"/>
+  <g transform="translate(318 18)"><path d="M32 2 10 10v16c0 14 9.4 24 22 28 12.6-4 22-14 22-28V10L32 2Z" transform="scale(.9)" fill="#2fd488"/><rect x="21" y="26" width="16" height="13" rx="3" fill="#fff"/><path d="M24 26v-4a5 5 0 0 1 10 0v4" stroke="#fff" stroke-width="2.5" fill="none"/></g>
+  <rect x="20" y="206" width="104" height="44" rx="12" fill="#fff" opacity=".16"/>
+  <rect x="32" y="218" width="20" height="20" rx="5" fill="#ffd27a"/><rect x="60" y="220" width="52" height="7" rx="3.5" fill="#fff" opacity=".8"/><rect x="60" y="231" width="34" height="7" rx="3.5" fill="#fff" opacity=".45"/>
+</svg>

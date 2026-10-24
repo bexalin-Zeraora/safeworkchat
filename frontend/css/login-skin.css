@@ -1,0 +1,57 @@
+/* Login: green brand panel (desktop) and dark card (mobile), as in the mockup */
+.login-left,.brand-panel,.left-panel{background:linear-gradient(160deg,#0b3b30 0%,#0f5a45 100%)!important}
+.btn-primary,.btn-success{background:#10a463!important;border-color:#10a463!important}
+.btn-primary:hover,.btn-success:hover{background:#0d8a53!important;border-color:#0d8a53!important}
+.btn-outline-dark:disabled{opacity:.7}
+/* ---- Phone layout (screen 12): dark green page, light text, dark inputs ---- */
+@media (max-width:767px){
+  body.login-page{background:linear-gradient(170deg,#0b3b30 0%,#082a22 100%)!important;padding:0!important;align-items:flex-start!important;min-height:100vh}
+  .login-container{background:transparent!important;box-shadow:none!important;border-radius:0!important;max-width:460px!important;min-height:100vh!important;margin:0 auto;flex-direction:column;overflow:visible!important}
+
+  .login-left{background:transparent!important;padding:34px 24px 6px!important;min-height:0!important;gap:14px;align-items:center;text-align:center;overflow:visible!important}
+  .login-left::after,.login-left::before{display:none!important}
+  .brand-section{display:flex;flex-direction:column;align-items:center}
+  .logo-container{width:auto!important;height:auto!important;margin:0 0 6px!important;background:none!important;box-shadow:none!important}
+  .logo-container img{width:72px;height:72px;filter:none}
+  .brand-title{font-size:1.7rem!important;margin:6px 0 2px!important;color:#fff!important}
+  .brand-tagline{color:#a9cbbf!important;margin:0!important;font-size:.9rem}
+  .features-list,.login-hero{display:none!important}
+  .security-badge{order:5;width:100%;justify-content:center;font-size:.72rem;padding:8px 12px!important;margin:6px 0 0!important;background:rgba(255,255,255,.07)!important;border-radius:10px;color:#a9cbbf!important;display:flex;gap:8px;align-items:center;text-align:left}
+
+  .login-right{background:transparent!important;padding:10px 24px 32px!important;align-items:flex-start!important}
+  .form-container{max-width:100%}
+  .form-header{margin-bottom:18px!important;text-align:left}
+  .form-header h2{color:#fff!important;font-size:1.5rem!important}
+  .form-header p,.text-muted{color:#9db9b0!important}
+  .form-label{color:#d6e8e1!important;font-size:.85rem}
+  .custom-input,.form-control{background:#0f2a30!important;color:#eaf6f1!important;border:1px solid #24464d!important;border-radius:10px!important;padding:12px 14px!important;font-size:1rem}
+  .form-control::placeholder{color:#6f8f89!important}
+  .form-control:focus{border-color:#10a463!important;box-shadow:0 0 0 3px rgba(16,164,99,.25)!important}
+  .input-group .form-control{border-radius:10px 0 0 10px!important}
+  .input-group .btn{background:#0f2a30!important;border:1px solid #24464d!important;border-left:0!important;color:#9db9b0!important;border-radius:0 10px 10px 0!important}
+  .form-check-input{background-color:#0f2a30;border-color:#3b6068}
+  .form-check-input:checked{background-color:#10a463;border-color:#10a463}
+  .form-check-label{color:#d6e8e1!important}
+  .forgot-link,.text-primary{color:#3ddc97!important}
+  .btn-block{width:100%;padding:12px!important;border-radius:10px!important;font-size:1rem}
+  .divider{color:#6f8f89!important}
+  .divider:before,.divider:after,.divider span:before,.divider span:after{border-color:#24464d!important;background:#24464d!important}
+  .divider span{background:transparent!important;color:#6f8f89!important}
+  .btn-outline-dark{background:#fff!important;color:#1b2a33!important;border:0!important;opacity:.95}
+  .btn-outline-dark:disabled{opacity:.9}
+  .alert{border-radius:10px}
+}
+/* logo: no box around it */
+.logo-container{border:0!important;background:none!important;box-shadow:none!important;border-radius:0!important;padding:0!important}
+@media (max-width:767px){ .logo-container img{width:76px;height:76px} }
+/* keep the desktop card within one screen */
+@media (min-width:768px){
+  .login-hero{max-width:250px;margin-top:0}
+  .login-left{padding-top:36px!important;padding-bottom:30px!important}
+  .login-container{min-height:0!important}
+  .login-left .features-list{margin:18px 0!important}
+}
+@media (max-width:767px){
+  .login-left{justify-content:flex-start!important}
+  .security-badge{margin:4px 0 22px!important}
+}

@@ -1,0 +1,42 @@
+# 3rd year CSE B
+# One name per line. Optional role after a bar:  Name | Admin   or   Name | Manager   (default: Member)
+# Lines starting with # are ignored.
+Asigha K G
+Bexalin B A
+Deepthi T
+Deva Dharshini M
+Deva Shri S
+Dhanusha T S
+Gopika
+Gurupriya G
+Harini S
+Harini V
+Hema anood
+Ishwarya
+Ishwarya Lakshmi S
+Janani S
+Jaya Akshaya
+Kanya
+Kavya
+Maruthupriyanka
+Mathi Vathani
+Nagajothi
+Nirupa
+Nithya Lakshmi
+Packiya Lakshmi
+Pavithra
+Radhika
+Renganayaki
+Rubika
+Samisksha
+seesha harini
+sorna lakshmi | Manager
+subha
+subharanjani
+vel srinithi
+varshitha
+vigneshwari
+subhikasha
+feronica
+nirmala G | Admin
+stella Inba mary | Manager

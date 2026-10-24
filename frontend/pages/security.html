@@ -1,0 +1,55 @@
+<!DOCTYPE html><html lang="en"><head>
+<script src="/js/session.js"></script><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Safe WorkChat - Security &amp; Connection</title>
+<link rel="stylesheet" href="/vendor/bootstrap.min.css"><link rel="stylesheet" href="/vendor/all.min.css"><link rel="stylesheet" href="/css/app.css"><link rel="stylesheet" href="/css/tasks.css"><link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+<script src="/js/avatar.js"></script>
+</head>
+<body><div class="app">
+<aside class="sb"><div class="brand"><img src="/images/logo.svg" alt=""><div>Safe WorkChat<small>Secure Conversations</small></div></div>
+<a href="/pages/dashboard.html"><i class="fas fa-home"></i>Home</a>
+<a href="/pages/chat.html"><i class="fas fa-comment-dots"></i>Chats</a>
+<a href="/pages/groups.html"><i class="fas fa-users"></i>Groups</a>
+<a href="/pages/friends.html"><i class="fas fa-user-friends"></i>Friends</a>
+<a href="/pages/tasks.html"><i class="fas fa-tasks"></i>Tasks</a>
+<a href="/pages/documents.html"><i class="fas fa-file-alt"></i>Documents</a>
+<a href="/pages/calendar.html"><i class="fas fa-calendar-alt"></i>Calendar</a>
+<a href="/pages/security.html" class="active"><i class="fas fa-shield-alt"></i>Security</a>
+<div class="sp"></div><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i>Logout</a></aside>
+<div class="mn"><div class="tb"><div class="search"><i class="fas fa-search"></i><input placeholder="Search chats, groups, or people..."></div></div>
+<div class="pg pgw">
+<div class="cd mb-3 menu"><div class="fw-bold mb-1">More</div>
+<a href="/pages/friends.html"><i class="fas fa-user-friends"></i>Friends</a>
+<a href="/pages/calendar.html"><i class="fas fa-calendar-alt"></i>Calendar</a>
+<a href="/pages/documents.html"><i class="fas fa-file-alt"></i>Documents</a>
+<a href="#" onclick="toggleTheme();return false"><i class="fas fa-moon"></i>Dark mode</a>
+<a href="#" onclick="logout();return false"><i class="fas fa-sign-out-alt"></i>Logout</a></div>
+<div class="cd sec"><div class="fw-bold mb-2"><i class="fas fa-shield-alt me-2"></i>Security &amp; Connection</div>
+<div class="row2"><div class="ic"><i class="fas fa-database"></i></div><div>MongoDB (local)<small id="dbSub">Checking…</small></div><span class="st2" id="dbSt">…</span></div>
+<div class="row2"><div class="ic"><i class="fas fa-sync-alt"></i></div><div>Real-time connection<small id="rtSub">Server: <span id="host"></span></small></div><span class="st2" id="rtSt">…</span></div>
+<div class="row2"><div class="ic"><i class="fas fa-lock"></i></div><div>Chat encryption<small>End-to-end (X25519 + XSalsa20-Poly1305). The server stores only ciphertext.</small></div><span class="st2">On</span></div>
+<div class="row2"><div class="ic"><i class="fas fa-fingerprint"></i></div><div>Your key fingerprint<small id="fp">Not set up on this device</small></div><span class="st2" id="fpSt"></span></div>
+<div class="row2"><div class="ic"><i class="fas fa-info-circle"></i></div><div>Not end-to-end encrypted<small>Tasks, documents and uploaded proof files are stored locally and protected by login and group roles, not by E2E encryption.</small></div><span class="st2" style="color:var(--mut)">Info</span></div>
+<div class="row2"><div class="ic"><i class="fas fa-server"></i></div><div>Data location<small>Stored on this machine / your local network only. No cloud services.</small></div><span class="st2">Local</span></div>
+<div class="row2"><div class="ic"><i class="fas fa-key"></i></div><div>Passwords<small>Hashed with bcrypt, never stored in plain text</small></div><span class="st2">On</span></div>
+<div class="row2"><div class="ic"><i class="fas fa-user-lock"></i></div><div>Sessions<small>Signed JWT tokens; every API call and socket is authenticated</small></div><span class="st2">On</span></div>
+<div class="row2"><div class="ic"><i class="fas fa-user-shield"></i></div><div>Access control<small>Per-group roles: Admin, Manager, Member</small></div><span class="st2">On</span></div>
+<div class="row2"><div class="ic"><i class="fas fa-code"></i></div><div>Input protection<small>Output escaping (XSS) and security headers (Helmet)</small></div><span class="st2">On</span></div>
+</div></div></div></div>
+<script src="/vendor/bootstrap.bundle.min.js"></script><script src="/vendor/socket.io.min.js"></script><script src="/vendor/nacl-fast.min.js"></script><script src="/js/e2ee.js"></script>
+<script>
+const token = sess.get('token');
+if (!token || !sess.get('user')) location.href = '/pages/login.html';
+function logout() { sess.clear(); location.href = '/pages/login.html'; }
+document.getElementById('host').textContent = location.host;
+const pk = sess.get('e2ee_pk');
+if (pk) { document.getElementById('fp').textContent = E2EE.fingerprint(pk) + ' (compare with a teammate to verify)'; set2('fpSt', 'Active'); }
+function set2(id, t) { document.getElementById(id).textContent = t; }
+const set = (id, t, bad) => { const e = document.getElementById(id); e.textContent = t; e.classList.toggle('bad', !!bad); };
+fetch('/api/health').then((r) => r.json()).then((h) => {
+  set('dbSt', h.db ? 'Connected' : 'Disconnected', !h.db); document.getElementById('dbSub').textContent = h.db ? 'Database is reachable' : 'Start MongoDB and restart the server';
+}).catch(() => { set('dbSt', 'Offline', true); document.getElementById('dbSub').textContent = 'Server not reachable'; });
+const s = io({ auth: { token } });
+if (window.watchSocket) window.watchSocket(s);
+s.on('connect', () => set('rtSt', 'Live'));
+s.on('disconnect', () => set('rtSt', 'Disconnected', true));
+s.on('connect_error', () => set('rtSt', 'Not authorized', true));
+</script><script src="/js/nav.js"></script></body></html>
