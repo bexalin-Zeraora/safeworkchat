@@ -16,13 +16,16 @@ const taskSchema = new mongoose.Schema({
   notifiedOverdue: { type: Boolean, default: false },
   stages: {
     type: [{
-      name: { type: String, required: true },
+      name: { type: String, required: true, maxlength: 60 },
+      description: { type: String, default: '', maxlength: 300 },
+      // pending -> in_progress ("I am working on this phase") -> done ("this phase is OK")
+      state: { type: String, enum: ['pending', 'in_progress', 'done'], default: 'pending' },
       done: { type: Boolean, default: false },
       proofType: { type: String, default: '' },
       doneAt: Date,
       doneBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
     }],
-    default: () => DEFAULT_STAGES.map((name) => ({ name }))
+    default: () => []     // the assigned person plans the phases themselves (2-100)
   },
 }, { timestamps: true });
 

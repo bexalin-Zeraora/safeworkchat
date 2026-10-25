@@ -9,6 +9,11 @@ let socket;
 let currentGroupId = null;
 let currentUser = null;
 let authToken = null;
+let myFriends = [];          // accepted friends (for starting direct chats)
+const unread = {};           // groupId -> number of new messages while looking at another chat
+const nameOf = (g) => (g.isDirect && g.peer ? g.peer.username : g.name);
+const openGroup = (g) => selectGroup(g._id, nameOf(g), g.myRole);
+const joinAll = () => { if (socket && socket.connected) allGroups.forEach((g) => socket.emit('joinRoom', g._id)); };
 
 function init() {
   try {
@@ -23,23 +28,24 @@ function init() {
     currentUser = JSON.parse(userStr);
     
     // Update Sidebar User Info
-    document.getElementById('sidebarName').textContent = currentUser.username || 'User';
-    document.getElementById('sidebarAvatar').textContent = (currentUser.username || 'U').charAt(0).toUpperCase();
 
     if (typeof io !== 'undefined') {
       socket = io({ auth: { token: authToken } });
       socket.on('connect', () => {
         console.log('✅ Socket connected');
         // after a reconnect the server has forgotten our rooms, so join the open group again
-        if (currentGroupId) socket.emit('joinRoom', currentGroupId);
+        joinAll();   // rooms are forgotten on reconnect: join all my chats again
       });
       if (window.watchSocket) window.watchSocket(socket);
       socket.on('receiveMessage', (msg) => {
-        if (msg.groupId === currentGroupId) appendMessage(msg);
+        if (msg.groupId === currentGroupId) { appendMessage(msg); return; }
+        // a message in a chat I am not looking at: show an unread badge
+        if (msg.type !== 'system') { unread[msg.groupId] = (unread[msg.groupId] || 0) + 1; renderGroups(); }
       });
     }
 
     loadGroups();
+    loadFriends();
     setupEventListeners();
   } catch (error) {
     console.error("Init Error:", error);
@@ -59,40 +65,87 @@ async function loadGroups() {
       });
     });
     renderGroups();
+    joinAll();
+    const params = new URLSearchParams(location.search);
     // opened from a notification: /pages/chat.html?group=<id>
-    const wanted = new URLSearchParams(location.search).get('group');
-    if (wanted && !currentGroupId) { const g = allGroups.find((x) => x._id === wanted); if (g) selectGroup(g._id, g.name, g.myRole); }
+    const wanted = params.get('group');
+    if (wanted && !currentGroupId) { const g = allGroups.find((x) => x._id === wanted); if (g) openGroup(g); }
+    // opened from the Friends page: /pages/chat.html?dm=<userId>
+    const dm = params.get('dm');
+    if (dm && !currentGroupId && !loadGroups.dmDone) {
+      loadGroups.dmDone = true;
+      await loadFriends();
+      const f = myFriends.find((x) => x._id === dm);
+      if (f) { tab = 'Direct'; document.querySelectorAll('#chatTabs button').forEach((x) => x.classList.toggle('on', x.dataset.t === 'Direct')); renderGroups(); startDirect(f); }
+    }
   } catch (error) {
     console.error("Load Groups Error:", error);
   }
+}
+
+async function loadFriends() {
+  try {
+    const r = await fetch(`${API_URL}/friends`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+    const d = await r.json(); myFriends = Array.isArray(d) ? d : [];
+  } catch (e) { /* offline */ }
+  renderGroups();
+}
+
+// open the one-to-one chat with a friend (creates it the first time, with its own encryption key)
+async function startDirect(friend) {
+  const existing = allGroups.find((g) => g.isDirect && g.peer && g.peer._id === friend._id);
+  if (existing) return openGroup(existing);
+  const myPk = sess.get('e2ee_pk'), sk = mySk();
+  if (!friend.publicKey) return alert(`${friend.username} must log in once before you can message them (to set up encryption).`);
+  if (!myPk || !sk) return alert('Your encryption key is missing on this device. Please log out and log in again.');
+  const gk = E2EE.newGroupKey();
+  try {
+    const r = await fetch(`${API_URL}/groups/direct`, { method: 'POST', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ friendId: friend._id, myKey: E2EE.wrapKey(gk, myPk, sk, myPk), friendKey: E2EE.wrapKey(gk, friend.publicKey, sk, myPk) }) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.message || 'Could not start the chat');
+    await loadGroups();
+    const g = allGroups.find((x) => x._id === d.groupId);
+    if (g) openGroup(g);
+  } catch (e) { alert(e.message); }
 }
 
 function renderGroups() {
   const list = document.getElementById('groupList');
   const q = (document.getElementById('groupSearch').value || '').toLowerCase();
   list.innerHTML = '';
-  if (tab === 'Direct') {
-    list.innerHTML = '<div class="p-3 text-center text-muted small">Direct messages are not available yet.</div>';
-    return;
-  }
-  const shown = allGroups.filter((g) => g.name.toLowerCase().includes(q));
-  if (!shown.length) {
-    list.innerHTML = '<div class="p-3 text-center text-muted small">' + (allGroups.length ? 'No matches.' : 'No groups yet.<br>Create one to begin!') + '</div>';
-    return;
-  }
-  shown.forEach((g) => {
+  const inTab = allGroups.filter((g) => tab === 'Direct' ? g.isDirect : tab === 'Groups' ? !g.isDirect : true)
+    .filter((g) => nameOf(g).toLowerCase().includes(q));
+
+  inTab.forEach((g) => {
     const div = document.createElement('div');
     div.className = 'group-item' + (g._id === currentGroupId ? ' active' : '');
+    const n = unread[g._id] || 0;
     div.innerHTML = `
-      <div class="group-avatar">${avImg(g.name, 46, 'group')}</div>
-      <div class="group-details"><h6>${esc(g.name)}</h6><small>${esc(g.description || g.myRole)}</small></div>`;
-    div.onclick = () => {
-      document.querySelectorAll('.group-item').forEach((el) => el.classList.remove('active'));
-      div.classList.add('active');
-      selectGroup(g._id, g.name, g.myRole);
-    };
+      <div class="group-avatar">${g.isDirect ? avImg(nameOf(g), 46) : avImg(g.name, 46, 'group')}</div>
+      <div class="group-details"><h6>${esc(nameOf(g))}</h6><small>${esc(g.isDirect ? 'Direct message' : (g.description || g.myRole))}</small></div>
+      ${n ? `<span class="ubadge">${n > 99 ? '99+' : n}</span>` : ''}`;
+    div.onclick = () => { openGroup(g); };
     list.appendChild(div);
   });
+
+  if (tab === 'Direct') {
+    // friends I have not started a chat with yet
+    const have = new Set(allGroups.filter((g) => g.isDirect && g.peer).map((g) => g.peer._id));
+    const fresh = myFriends.filter((f) => !have.has(f._id) && f.username.toLowerCase().includes(q));
+    if (fresh.length) {
+      const h = document.createElement('div'); h.className = 'dm-head'; h.textContent = 'Start a new chat'; list.appendChild(h);
+      fresh.forEach((f) => {
+        const d = document.createElement('div'); d.className = 'group-item';
+        d.innerHTML = `<div class="group-avatar">${avImg(f.username, 46)}</div><div class="group-details"><h6>${esc(f.username)}</h6><small>${f.publicKey ? 'Friend · tap to message' : 'Needs to log in once'}</small></div>`;
+        d.onclick = () => startDirect(f);
+        list.appendChild(d);
+      });
+    }
+    if (!inTab.length && !fresh.length) list.innerHTML = '<div class="p-3 text-center text-muted small">No friends yet.<br><a href="/pages/friends.html">Add friends</a> to start chatting.</div>';
+  } else if (!inTab.length) {
+    list.innerHTML = '<div class="p-3 text-center text-muted small">' + (allGroups.length ? 'No matches.' : 'No chats yet.<br>Create a group or message a friend!') + '</div>';
+  }
 }
 
 function groupInfo(id) { return allGroups.find((g) => g._id === id) || {}; }
@@ -110,8 +163,12 @@ function showText(msg) {
 async function selectGroup(groupId, name, role) {
   currentGroupId = groupId;
   currentGroupName = name;
-  const hv = document.getElementById('hdrAv'); if (hv) hv.src = avUrl(name, 'group');
+  const info0 = groupInfo(groupId);
+  const hv = document.getElementById('hdrAv'); if (hv) hv.src = info0.isDirect ? avUrl(name) : avUrl(name, 'group');
+  delete unread[groupId];
+  renderGroups();
   document.querySelector('.chat-container').classList.add('show-chat');
+  document.body.classList.add('in-chat');
   
   document.getElementById('chatHeader').style.display = 'flex';
   document.getElementById('inputArea').style.display = 'flex';
@@ -121,10 +178,13 @@ async function selectGroup(groupId, name, role) {
   if (isEnc(info) && curKey(groupId)) { badge.className = 'enc-badge ok'; badge.innerHTML = '<i class="fas fa-lock"></i> End-to-end encrypted'; }
   else if (isEnc(info)) { badge.className = 'enc-badge bad'; badge.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Key missing on this device. Log out and log in again.'; }
   else { badge.className = 'enc-badge warn'; badge.innerHTML = '<i class="fas fa-unlock"></i> Not encrypted (created before encryption was added)'; }
+  const direct = !!info.isDirect;
+  document.getElementById('rolePills').style.display = direct ? 'none' : '';
+  document.getElementById('infoBtn').style.display = direct ? 'none' : '';
   const shownRole = role === 'Member' ? 'User' : role;
   document.querySelectorAll('#rolePills .pill').forEach((p) => p.classList.toggle('on', p.dataset.r === shownRole));
-  document.getElementById('currentGroupRole').textContent = 'Loading members…';
-  fetch(`${API_URL}/groups/${groupId}/members`, { headers: { 'Authorization': `Bearer ${authToken}` } })
+  document.getElementById('currentGroupRole').textContent = direct ? 'Direct message' : 'Loading members…';
+  if (!direct) fetch(`${API_URL}/groups/${groupId}/members`, { headers: { 'Authorization': `Bearer ${authToken}` } })
     .then((r) => r.ok ? r.json() : [])
     .then((m) => {
       const admin = m.find((x) => x.role === 'Admin');
@@ -248,11 +308,13 @@ async function openInfo() {
 }
 
 function setupEventListeners() {
-  const refresh = async () => { await loadGroups(); if (currentGroupId) { const g = groupInfo(currentGroupId); if (g._id) selectGroup(g._id, g.name, g.myRole); } };
+  const refresh = async () => { await loadGroups(); if (currentGroupId) { const g = groupInfo(currentGroupId); if (g._id) openGroup(g); } };
   socket.on('groupKeyChanged', refresh);
   socket.on('groupsChanged', loadGroups);
+  socket.on('friendsChanged', loadFriends);
   document.getElementById('backBtn').onclick = () => {
     document.querySelector('.chat-container').classList.remove('show-chat');
+    document.body.classList.remove('in-chat');
     document.getElementById('chatHeader').style.display = 'none';
     document.getElementById('inputArea').style.display = 'none';
   };

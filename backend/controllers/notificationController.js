@@ -17,6 +17,11 @@ exports.readAll = async (req, res) => {
   try { await Notification.updateMany({ userId: req.user._id, read: false }, { read: true }); res.json({ ok: true }); } catch (e) { err(res, e); }
 };
 
+// DELETE /api/notifications/read  -> remove the notifications I have already read
+exports.clearRead = async (req, res) => {
+  try { const r = await Notification.deleteMany({ userId: req.user._id, read: true }); res.json({ removed: r.deletedCount }); } catch (e) { err(res, e); }
+};
+
 // POST /api/notifications/:id/read  (own notifications only)
 exports.readOne = async (req, res) => {
   try {

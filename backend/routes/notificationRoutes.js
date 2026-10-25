@@ -5,6 +5,7 @@ const { protect } = require('../middleware/authMiddleware');
 
 router.get('/', protect, c.list);
 router.post('/read-all', protect, c.readAll);
+router.delete('/read', protect, c.clearRead);
 router.post('/:id/read', protect, c.readOne);
 
 module.exports = router;

@@ -89,9 +89,17 @@ async function setupKeysAfterLogin(data, password) {
 registerForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   
-  const username = document.getElementById('regUsername').value;
-  const email = document.getElementById('regEmail').value;
+  const username = document.getElementById('regUsername').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
   const password = document.getElementById('regPassword').value;
+
+  // check everything BEFORE creating keys, with a clear message (the server checks again)
+  if (username.length < 2 || username.length > 30) return showAlert('Username must be 2 to 30 characters.');
+  if (/[<>"'&]/.test(username)) return showAlert('Username cannot contain < > " \' or &.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return showAlert('Please enter a valid email address.');
+  const problem = PasswordRules.firstProblem(password, { username, email });
+  if (problem) return showAlert(problem + '.');
+  if (password !== document.getElementById('regPassword2').value) return showAlert('The two passwords do not match.');
 
   try {
     // Generate this user's encryption keys in the browser; the private key never leaves unencrypted
@@ -172,3 +180,9 @@ async function checkAuth() {
 
 // Run on page load
 checkAuth();
+
+
+// live password checklist + strength bar + "passwords match" under the register form
+PasswordRules.attach(document.getElementById('regPassword'), document.getElementById('pwRules'),
+  () => ({ username: document.getElementById('regUsername').value, email: document.getElementById('regEmail').value }), document.getElementById('regPassword2'));
+['regUsername', 'regEmail'].forEach((id) => document.getElementById(id).addEventListener('input', () => document.getElementById('regPassword').dispatchEvent(new Event('input'))));

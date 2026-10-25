@@ -57,7 +57,7 @@ $('go').onclick = async () => {
 
 (async () => {
   try {
-    const g = await api('/my-groups');
+    const g = (await api('/my-groups')).filter((x) => !x.isDirect);
     $('mine').innerHTML = g.length ? g.map((x) => `<div class="d-flex justify-content-between py-1 border-bottom"><span class="text-dark">${avImg(x.name, 26, 'group')} ${esc(x.name)}</span><span class="tag Low">${esc(x.myRole)}</span></div>`).join('') : 'You are not in any group yet.';
   } catch (e) { $('mine').textContent = e.message; }
 })();

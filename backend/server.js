@@ -22,6 +22,9 @@ const { isCipher } = require('./utils_crypto');
 const Group = require('./models/Group');
 const friendRoutes = require('./routes/friendRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const userRoutes = require('./routes/userRoutes');
+const { customAvatar } = require('./utils_avatar');
+const { AVATAR_DIR } = require('./controllers/userController');
 const dueReminders = require('./jobs/dueReminders');
 const { createAvatar } = require('@dicebear/core');
 const { lorelei, shapes } = require('@dicebear/collection');
@@ -62,10 +65,18 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 // Generated avatars (CC0 styles). The picture is derived only from the name, so no personal data is needed.
 const avatarCache = new Map();
-app.get('/avatars/:file', (req, res) => {
+app.get('/avatars/:file', async (req, res) => {
   const m = /^(.{1,60})\.svg$/.exec(req.params.file);
   if (!m) return res.status(404).end();
   const group = req.query.kind === 'group';
+  if (!group) {   // an uploaded profile picture wins over the generated one
+    const custom = await customAvatar(m[1]).catch(() => '');
+    if (custom) {
+      const ext = custom.split('.').pop();
+      res.set({ 'Content-Type': ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg', 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff' });
+      return res.sendFile(require('path').join(AVATAR_DIR, require('path').basename(custom)), (e) => { if (e && !res.headersSent) res.status(404).end(); });
+    }
+  }
   const key = (group ? 'g:' : 'u:') + m[1];
   let svg = avatarCache.get(key);
   if (!svg) {
@@ -73,7 +84,7 @@ app.get('/avatars/:file', (req, res) => {
     if (avatarCache.size > 1000) avatarCache.delete(avatarCache.keys().next().value);
     avatarCache.set(key, svg);
   }
-  res.set({ 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=86400', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'" });
+  res.set({ 'Content-Type': 'image/svg+xml', 'Cache-Control': 'no-cache', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'" });
   res.send(svg);
 });
 
@@ -89,6 +100,7 @@ app.use('/api/groups', groupRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/friends', friendRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/documents', documentRoutes);
 

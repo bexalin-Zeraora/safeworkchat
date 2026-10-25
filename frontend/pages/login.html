@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="/vendor/all.min.css">
   <link rel="stylesheet" href="/css/styles.css">
   <link rel="stylesheet" href="/css/login-skin.css">
+  <link rel="stylesheet" href="/css/password.css">
 <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
 </head>
 <body class="login-page">
@@ -115,16 +116,20 @@
         <form id="registerForm" class="hidden">
           <div class="mb-3">
             <label class="form-label">Username</label>
-            <input type="text" class="form-control custom-input" id="regUsername" required>
+            <input type="text" class="form-control custom-input" id="regUsername" maxlength="30" autocomplete="username" required>
           </div>
           <div class="mb-3">
             <label class="form-label">Email</label>
-            <input type="email" class="form-control custom-input" id="regEmail" required>
+            <input type="email" class="form-control custom-input" id="regEmail" maxlength="100" autocomplete="email" required>
           </div>
           <div class="mb-3">
             <label class="form-label">Password</label>
-            <input type="password" class="form-control custom-input" id="regPassword" 
-                   minlength="6" required>
+            <input type="password" class="form-control custom-input" id="regPassword" autocomplete="new-password" required>
+            <div id="pwRules"></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Confirm password</label>
+            <input type="password" class="form-control custom-input" id="regPassword2" autocomplete="new-password" required>
           </div>
           <button type="submit" class="btn btn-success btn-block mb-3">
             <i class="fas fa-user-plus me-2"></i>Create Account
@@ -142,6 +147,7 @@
   <!-- FIXED: Use absolute paths for JS too -->
   <script src="/vendor/bootstrap.bundle.min.js"></script>
   <script src="/vendor/nacl-fast.min.js"></script>
+  <script src="/js/passwordRules.js"></script>
   <script src="/js/e2ee.js"></script>
   <script src="/js/auth.js"></script>
 </body>

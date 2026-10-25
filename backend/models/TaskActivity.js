@@ -7,6 +7,7 @@ const taskActivitySchema = new mongoose.Schema({
   from: { type: String, default: '' },
   to: { type: String, default: '' },
   stage: { type: String, default: '' },
+  stageId: { type: String, default: '' },
   comment: { type: String, default: '' },
   proofType: { type: String, default: '' },
   file: { filename: String, originalName: String, mimetype: String, size: Number }

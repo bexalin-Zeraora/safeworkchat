@@ -1,0 +1,40 @@
+<!DOCTYPE html><html lang="en"><head>
+<script src="/js/session.js"></script><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Safe WorkChat - Profile</title>
+<link rel="stylesheet" href="/vendor/bootstrap.min.css"><link rel="stylesheet" href="/vendor/all.min.css"><link rel="stylesheet" href="/css/app.css"><link rel="stylesheet" href="/css/tasks.css"><link rel="stylesheet" href="/css/password.css">
+<link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+<script src="/js/avatar.js"></script>
+</head>
+<body><div class="app">
+<aside class="sb"><div class="brand"><img src="/images/logo.svg" alt=""><div>Safe WorkChat<small>Secure Conversations</small></div></div>
+<a href="/pages/dashboard.html"><i class="fas fa-home"></i>Home</a>
+<a href="/pages/chat.html"><i class="fas fa-comment-dots"></i>Chats</a>
+<a href="/pages/groups.html"><i class="fas fa-users"></i>Groups</a>
+<a href="/pages/friends.html"><i class="fas fa-user-friends"></i>Friends</a>
+<a href="/pages/tasks.html"><i class="fas fa-tasks"></i>Tasks</a>
+<a href="/pages/documents.html"><i class="fas fa-file-alt"></i>Documents</a>
+<a href="/pages/calendar.html"><i class="fas fa-calendar-alt"></i>Calendar</a>
+<a href="/pages/notifications.html"><i class="fas fa-bell"></i>Notifications</a>
+<a href="/pages/profile.html" class="active"><i class="fas fa-user-circle"></i>Profile</a>
+<div class="sp"></div><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i>Logout</a></aside>
+<div class="mn"><div class="tb"><div class="search"><i class="fas fa-search"></i><input placeholder="Search chats, groups, or people..."></div><div class="conn">Connected to local MongoDB</div></div>
+<div class="pg pgw">
+<div class="cd mb-3"><div class="fw-bold mb-3"><i class="fas fa-camera me-2"></i>Profile picture</div>
+<div class="d-flex align-items-center gap-3 flex-wrap"><img id="pic" class="av" width="96" height="96" alt="" style="width:96px;height:96px">
+<div><button id="choose" class="btn-s" style="margin:0;padding:8px 16px">Upload new picture</button> <button id="removePic" class="btn btn-outline-secondary btn-sm">Use default</button>
+<input type="file" id="file" accept="image/jpeg,image/png,image/webp" hidden>
+<div class="small text-muted mt-2">JPG, PNG or WebP. It is cropped to a square and shrunk before upload.</div><div id="picMsg" class="small mt-1"></div></div></div></div>
+
+<div class="cd mb-3"><div class="fw-bold mb-2"><i class="fas fa-id-card me-2"></i>Your details</div>
+<label class="lbl">Username</label><input id="un" class="fld" maxlength="30" autocomplete="off">
+<label class="lbl">About me (optional, max 160 characters)</label><textarea id="bio" class="fld" rows="2" maxlength="160"></textarea>
+<label class="lbl">Email (cannot be changed)</label><input id="em" class="fld" disabled>
+<div id="detMsg" class="small mt-2"></div><button id="saveDet" class="btn-s mt-2" style="margin:0;padding:8px 18px">Save changes</button></div>
+
+<div class="cd mb-3"><div class="fw-bold mb-2"><i class="fas fa-key me-2"></i>Change password</div>
+<label class="lbl">Current password</label><input id="cp" type="password" class="fld" autocomplete="current-password">
+<label class="lbl">New password</label><input id="np" type="password" class="fld" autocomplete="new-password"><div id="npRules"></div>
+<label class="lbl">Repeat new password</label><input id="np2" type="password" class="fld" autocomplete="new-password">
+<div class="small text-muted mt-2">Your chat encryption key is re-protected with the new password automatically.</div>
+<div id="pwMsg" class="small mt-2"></div><button id="savePw" class="btn-s mt-2" style="margin:0;padding:8px 18px">Change password</button></div>
+</div></div></div>
+<script src="/vendor/bootstrap.bundle.min.js"></script><script src="/vendor/nacl-fast.min.js"></script><script src="/js/e2ee.js"></script><script src="/js/passwordRules.js"></script><script src="/js/profile.js"></script><script src="/js/nav.js"></script></body></html>

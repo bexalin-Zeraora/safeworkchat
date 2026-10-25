@@ -76,10 +76,20 @@ const getMyGroups = async (req, res) => {
     const userId = req.user._id;
 
     // Find all group memberships for this user
-    const memberships = await GroupMember.find({ userId }).populate('groupId');
-    
+    const memberships = (await GroupMember.find({ userId }).populate('groupId')).filter((m) => m.groupId);
+
+    // for one-to-one chats, find who the other person is
+    const directIds = memberships.filter((m) => m.groupId.isDirect).map((m) => m.groupId._id);
+    const peers = {};
+    if (directIds.length) {
+      const others = await GroupMember.find({ groupId: { $in: directIds }, userId: { $ne: userId } }).populate('userId', 'username publicKey');
+      others.forEach((o) => { if (o.userId) peers[String(o.groupId)] = { _id: o.userId._id, username: o.userId.username, publicKey: o.userId.publicKey || '' }; });
+    }
+
     // Extract just the group details and the user's role in each
     const groups = memberships.map(m => ({
+      isDirect: !!m.groupId.isDirect,
+      peer: peers[String(m.groupId._id)] || null,
       _id: m.groupId._id,
       name: m.groupId.name,
       description: m.groupId.description,
@@ -125,6 +135,7 @@ const addMember = async (req, res) => {
     if (!newUser || !newUser.publicKey) return res.status(400).json({ message: 'That person has not set up encryption yet (they must log in once)' });
 
     const group = await Group.findById(groupId);
+    if (group.isDirect) return res.status(400).json({ message: 'You cannot add people to a one-to-one chat' });
     const newVersion = group.keyVersion + 1;
     if (Number(req.body.keyVersion) !== newVersion) return res.status(409).json({ message: 'Group changed, please try again' });
 
@@ -155,4 +166,34 @@ const addMember = async (req, res) => {
   }
 };
 
-module.exports = { createGroup, getMyGroups, getGroupMembers, addMember };
+// @desc    Open (or create) the one-to-one chat with a friend
+// @route   POST /api/groups/direct   body: { friendId, myKey, friendKey }
+const createDirect = async (req, res) => {
+  try {
+    const me = String(req.user._id), friendId = req.body.friendId;
+    if (typeof friendId !== 'string' || !/^[a-f0-9]{24}$/i.test(friendId) || friendId === me) return res.status(400).json({ message: 'Invalid friend' });
+    if (!(await areFriends(me, [friendId]))) return res.status(403).json({ message: 'You can only message your friends' });
+
+    const directKey = [me, friendId].sort().join(':');
+    let g = await Group.findOne({ directKey });
+    if (g) return res.json({ groupId: g._id, existing: true });
+
+    const friend = await User.findById(friendId).select('publicKey');
+    const myKey = cleanWrappedKey(req.body.myKey), friendKey = cleanWrappedKey(req.body.friendKey);
+    if (!friend || !friend.publicKey) return res.status(400).json({ message: 'That friend has not set up encryption yet (they must log in once)' });
+    if (!myKey || !friendKey) return res.status(400).json({ message: 'Encryption keys are missing' });
+
+    try { g = await Group.create({ name: 'Direct chat', createdBy: me, isDirect: true, directKey }); }
+    catch (e) { const again = await Group.findOne({ directKey }); if (again) return res.json({ groupId: again._id, existing: true }); throw e; }
+    await GroupMember.insertMany([
+      { groupId: g._id, userId: me, role: 'Member', keys: [{ version: 1, ...myKey }] },
+      { groupId: g._id, userId: friendId, role: 'Member', keys: [{ version: 1, ...friendKey }] }
+    ]);
+    const io = req.app.get('io'); if (io) io.to('user:' + friendId).emit('groupsChanged');
+    res.status(201).json({ groupId: g._id, existing: false });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+module.exports = { createGroup, getMyGroups, getGroupMembers, addMember, createDirect };

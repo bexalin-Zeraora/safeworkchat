@@ -33,7 +33,7 @@ const MONTHS = ['January','February','March','April','May','June','July','August
 function isOverdue(t) { return t.status !== 'Completed' && new Date(t.dueDate) < new Date(); }
 
 async function loadGroups() {
-  groups = await api('/groups/my-groups');
+  groups = (await api('/groups/my-groups')).filter((g) => !g.isDirect);
   manageableGroups = groups.filter((g) => g.myRole === 'Admin' || g.myRole === 'Manager');
   const sel = document.getElementById('groupFilter');
   sel.innerHTML = '<option value="">All Groups</option>' + groups.map((g) => `<option value="${esc(g._id)}">${esc(g.name)}</option>`).join('');

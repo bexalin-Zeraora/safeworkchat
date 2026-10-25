@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const { cleanKeyBackup, isPublicKey } = require('../utils_crypto');
+const { checkUsername, checkEmail, checkPassword } = require('../utils_validate');
 
 // Generate JWT Token
 const generateToken = (id) => {
@@ -13,20 +14,18 @@ const generateToken = (id) => {
 // @route   POST /api/auth/register
 const registerUser = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
-
-    // 1. Check if all fields are provided
-    if (!username || !email || !password) {
+    const { password } = req.body;
+    // plain strings only (an object such as {"$ne": ""} must never reach a query), then format and strength checks
+    if (typeof req.body.username !== 'string' || typeof req.body.email !== 'string' || typeof password !== 'string') {
       return res.status(400).json({ message: 'Please provide username, email, and password' });
     }
+    const username = req.body.username.trim(), email = req.body.email.trim().toLowerCase();
+    const problem = checkUsername(username) || checkEmail(email) || checkPassword(password, { username, email });
+    if (problem) return res.status(400).json({ message: problem });
 
-    // 2. Check if password is long enough
-    if (password.length < 6) {
-      return res.status(400).json({ message: 'Password must be at least 6 characters' });
-    }
-
-    // 3. Check if user already exists (by email OR username)
-    const userExists = await User.findOne({ $or: [{ email }, { username }] });
+    // 3. Check if user already exists (by email OR username, case-insensitive for the name)
+    const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const userExists = await User.findOne({ $or: [{ email }, { username: new RegExp('^' + esc(username) + '$', 'i') }] });
     if (userExists) {
       return res.status(400).json({ message: 'User with this email or username already exists' });
     }
@@ -100,4 +99,33 @@ const setKeys = async (req, res) => {
 // @route   GET /api/auth/me
 const me = (req, res) => res.json({ ok: true, _id: req.user._id, username: req.user.username });
 
-module.exports = { registerUser, loginUser, setKeys, me };
+// @desc    Change password. The browser also sends the private-key backup re-encrypted with the new password.
+// @route   PUT /api/auth/password
+const attempts = new Map();
+const changePassword = async (req, res) => {
+  try {
+    const now = Date.now(), list = (attempts.get(String(req.user._id)) || []).filter((t) => now - t < 60000);
+    list.push(now); attempts.set(String(req.user._id), list);
+    if (list.length > 5) return res.status(429).json({ message: 'Too many attempts. Try again in a minute.' });
+
+    const { currentPassword, newPassword } = req.body;
+    if (typeof currentPassword !== 'string' || typeof newPassword !== 'string') {
+      return res.status(400).json({ message: 'Current and new password are required' });
+    }
+    const user = await User.findById(req.user._id);
+    if (!(await user.matchPassword(currentPassword))) return res.status(403).json({ message: 'Current password is wrong' });
+    const problem = checkPassword(newPassword, { username: user.username, email: user.email });
+    if (problem) return res.status(400).json({ message: problem });
+    if (newPassword === currentPassword) return res.status(400).json({ message: 'The new password must be different from the current one' });
+    const kb = cleanKeyBackup(req.body.keyBackup);
+    if (user.publicKey && !kb) return res.status(400).json({ message: 'Key backup is required. Log out and log in again, then retry.' });
+    user.password = newPassword;
+    if (kb) user.keyBackup = kb;
+    await user.save();
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+module.exports = { registerUser, loginUser, setKeys, me, changePassword };

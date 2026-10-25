@@ -26,7 +26,7 @@
   let me = null; try { me = JSON.parse(sess.get('user') || 'null'); } catch (e) {}
   if (tb && me && me.username && window.avImg) {
     const chip = document.createElement('div');
-    chip.className = 'uchip';
+    chip.className = 'uchip'; chip.style.cursor = 'pointer'; chip.title = 'My profile'; chip.onclick = () => { location.href = '/pages/profile.html'; };
     chip.innerHTML = window.avImg(me.username, 32) + '<span></span>';
     chip.lastChild.textContent = me.username;
     tb.appendChild(chip);
@@ -122,8 +122,13 @@
   .bpanel .bi .ic.task_due_soon{background:#f5a524}.bpanel .bi .ic.task_overdue{background:#e5484d}.bpanel .bi .ic.task_completed{background:#3b82f6}
   .bpanel .bi b{display:block;font-size:.82rem}.bpanel .bi small{color:#7a8a94;font-size:.7rem}
   .bpanel .bi .dot{width:8px;height:8px;border-radius:50%;background:#10a463;margin-left:auto;flex:none;align-self:center}
-  .btoast{position:fixed;right:16px;bottom:76px;z-index:3100;max-width:340px;background:#0b3b30;color:#fff;border-radius:12px;padding:12px 14px;box-shadow:0 10px 28px rgba(0,0,0,.3);cursor:pointer;font-size:.82rem;border-left:4px solid #3ddc97}
-  .btoast b{display:block;margin-bottom:2px}`;
+  .sstack{position:fixed;right:16px;bottom:16px;z-index:3100;display:flex;flex-direction:column;gap:8px;width:min(360px,calc(100vw - 24px))}
+  @media(max-width:900px){.sstack{bottom:70px;right:12px}}
+  .scard{background:#0b3b30;color:#fff;border-radius:12px;padding:9px 10px 9px 12px;box-shadow:0 10px 28px rgba(0,0,0,.3);font-size:.82rem;border-left:4px solid #3ddc97;display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+  .scard.task_due_soon{border-left-color:#f5a524}.scard.task_overdue{border-left-color:#e5484d}
+  .scard b{display:block;margin-bottom:2px}.scard .x{margin-left:auto;border:0;background:rgba(255,255,255,.14);color:#fff;border-radius:50%;width:24px;height:24px;flex:none;cursor:pointer;line-height:1}
+  .scard .hint{font-size:.7rem;color:#9fd8c0;margin-top:3px;display:block}
+  .smore{align-self:flex-end;background:#fff;color:#0b3b30;border-radius:14px;padding:4px 12px;font-size:.75rem;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.25)}`;
   document.head.appendChild(css);
 
   const wrap = document.createElement('div');
@@ -164,6 +169,9 @@
       row.onclick = async () => { try { await fetch('/api/notifications/' + n._id + '/read', { method: 'POST', headers: H }); } catch (e) {} if (n.link && n.link.startsWith('/')) location.href = n.link; else load(); };
       panel.appendChild(row);
     });
+    const more = document.createElement('a'); more.href = '/pages/notifications.html'; more.textContent = 'See all notifications'; more.style.cssText = 'display:block;text-align:center;padding:10px;font-size:.78rem;font-weight:600;color:#0d8a53;text-decoration:none';
+    panel.appendChild(more);
+    renderSticky(); updateTitle();
   }
 
   async function load() {
@@ -186,16 +194,43 @@
     if (window.Notification && window.isSecureContext && Notification.permission === 'default') Notification.requestPermission();
   };
   document.addEventListener('click', (e) => { if (!panel.hidden && !panel.contains(e.target)) panel.hidden = true; });
-  window.addEventListener('resize', () => { if (!panel.hidden) place(); });
+  window.addEventListener('resize', () => { if (!panel.hidden) place(); renderSticky(); });
 
-  function toast(n) {
-    const el = document.createElement('div'); el.className = 'btoast';
-    const t = document.createElement('b'); t.textContent = n.title; const b = document.createElement('div'); b.textContent = n.body;
-    el.append(t, b);
-    el.onclick = () => { if (n.link && n.link.startsWith('/')) location.href = n.link; else el.remove(); };
-    document.body.appendChild(el); setTimeout(() => el.remove(), 8000);
-    try { if (window.Notification && Notification.permission === 'granted' && document.hidden) new Notification(n.title, { body: n.body }); } catch (e) {}
+  // Persistent cards: every UNREAD notification stays on screen (on every page, after every reload)
+  // until you open it or press the cross. Reading it anywhere removes it everywhere.
+  const stack = document.createElement('div'); stack.className = 'sstack'; document.body.appendChild(stack);
+  function renderSticky() {
+    stack.textContent = '';
+    if (location.pathname.endsWith('/notifications.html')) return;
+    const unreadItems = items.filter((n) => !n.read);
+    const maxCards = window.innerWidth <= 900 ? 1 : (document.body.classList.contains('chat-page') ? 2 : 3);   // keep the screen usable
+    unreadItems.slice(0, maxCards).forEach((n) => {
+      const card = document.createElement('div'); card.className = 'scard ' + n.type;
+      const txt = document.createElement('div');
+      const t = document.createElement('b'); t.textContent = n.title; const b = document.createElement('div'); b.textContent = n.body;
+      const hint = document.createElement('span'); hint.className = 'hint'; hint.textContent = ago(n.createdAt) + ' · click to open';
+      txt.append(t, b, hint);
+      const x = document.createElement('button'); x.className = 'x'; x.title = 'Mark as read'; x.setAttribute('aria-label', 'Mark as read'); x.textContent = '✕';
+      x.onclick = async (e) => { e.stopPropagation(); try { await fetch('/api/notifications/' + n._id + '/read', { method: 'POST', headers: H }); } catch (er) {} load(); };
+      card.onclick = async () => { try { await fetch('/api/notifications/' + n._id + '/read', { method: 'POST', headers: H }); } catch (er) {} if (n.link && n.link.startsWith('/')) location.href = n.link; else load(); };
+      card.append(txt, x); stack.appendChild(card);
+    });
+    if (unreadItems.length > maxCards) { const m = document.createElement('a'); m.className = 'smore'; m.href = '/pages/notifications.html'; m.textContent = '+' + (unreadItems.length - maxCards) + ' more unread'; stack.appendChild(m); }
   }
+  const baseTitle = document.title.replace(/^\(\d+\+?\)\s*/, '');
+  function updateTitle() { document.title = (unread ? '(' + (unread > 99 ? '99+' : unread) + ') ' : '') + baseTitle; }
+
+  // OS-level pop-up that stays until clicked (browsers only allow this on localhost or https)
+  const shown = new Set();
+  function desktopNotify(n) {
+    try {
+      if (!(window.Notification && window.isSecureContext && Notification.permission === 'granted') || shown.has(n._id)) return;
+      shown.add(n._id);
+      const nt = new Notification(n.title, { body: n.body, requireInteraction: true, tag: n._id });
+      nt.onclick = () => { window.focus(); if (n.link && n.link.startsWith('/')) location.href = n.link; };
+    } catch (e) {}
+  }
+  function toast(n) { desktopNotify(n); }   // the on-screen card comes from load() -> renderSticky()
 
   // live updates over the socket (loads the socket library when the page does not already have it)
   function connect() {

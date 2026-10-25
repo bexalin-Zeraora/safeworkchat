@@ -2,373 +2,85 @@
 <html lang="en">
 <head>
 <script src="/js/session.js"></script>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Safe WorkChat - Messages</title>
-  <link rel="stylesheet" href="/vendor/bootstrap.min.css">
-  <link rel="stylesheet" href="/vendor/all.min.css">
-  
-  <style>
-    :root {
-      --sidebar-bg: #1e293b;
-      --sidebar-hover: #334155;
-      --sidebar-active: #0f766e;
-      --chat-bg: #f8fafc;
-      --message-sent: #0d9488;
-      --message-received: #ffffff;
-      --border-color: #e2e8f0;
-      --text-primary: #0f172a;
-      --text-secondary: #64748b;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; background: var(--chat-bg); height: 100vh; overflow: hidden; color: var(--text-primary); }
-
-    .app-layout { display: flex; height: 100vh; }
-
-    /* --- SIDEBAR --- */
-    .sidebar {
-      width: 280px;
-      background: var(--sidebar-bg);
-      color: white;
-      display: flex;
-      flex-direction: column;
-      border-right: 1px solid rgba(255,255,255,0.1);
-      flex-shrink: 0;
-    }
-
-    .sidebar-header {
-      padding: 24px 20px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .logo-icon {
-      width: 36px;
-      height: 36px;
-      background: var(--sidebar-active);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.2rem;
-    }
-
-    .brand-text { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.5px; }
-
-    .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
-    
-    .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-      color: #cbd5e1;
-      text-decoration: none;
-      border-radius: 8px;
-      margin-bottom: 4px;
-      transition: all 0.2s ease;
-      font-size: 0.95rem;
-      font-weight: 500;
-    }
-
-    .nav-item:hover { background: var(--sidebar-hover); color: white; }
-    .nav-item.active { background: var(--sidebar-active); color: white; }
-    .nav-item i { width: 20px; text-align: center; }
-
-    .sidebar-footer {
-      padding: 16px 20px;
-      border-top: 1px solid rgba(255,255,255,0.1);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .user-avatar {
-      width: 36px;
-      height: 36px;
-      background: linear-gradient(135deg, #0f766e, #14b8a6);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 0.9rem;
-    }
-
-    .user-info h6 { font-size: 0.9rem; margin: 0; font-weight: 600; }
-    .user-info small { font-size: 0.75rem; color: #94a3b8; }
-
-    /* --- MAIN CHAT AREA --- */
-    .chat-wrapper { flex: 1; display: flex; flex-direction: column; background: var(--chat-bg); }
-
-    .chat-header {
-      background: white;
-      padding: 16px 24px;
-      border-bottom: 1px solid var(--border-color);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-
-    .chat-header-info h5 { margin: 0; font-weight: 700; font-size: 1.1rem; }
-    .chat-header-info small { color: var(--text-secondary); font-size: 0.85rem; }
-
-    .chat-container { flex: 1; display: flex; overflow: hidden; }
-
-    /* Group List inside Chat */
-    .group-list-panel {
-      width: 260px;
-      background: white;
-      border-right: 1px solid var(--border-color);
-      display: flex;
-      flex-direction: column;
-    }
-
-    .panel-header {
-      padding: 16px;
-      border-bottom: 1px solid var(--border-color);
-      font-weight: 600;
-      font-size: 0.9rem;
-      color: var(--text-secondary);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .group-scroll { flex: 1; overflow-y: auto; }
-
-    .group-item {
-      padding: 14px 16px;
-      border-bottom: 1px solid #f1f5f9;
-      cursor: pointer;
-      transition: background 0.15s;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .group-item:hover { background: #f8fafc; }
-    .group-item.active { background: #f0fdfa; border-left: 3px solid var(--sidebar-active); }
-    
-    .group-avatar {
-      width: 40px;
-      height: 40px;
-      background: #e2e8f0;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-secondary);
-      font-weight: 700;
-    }
-
-    .group-details h6 { margin: 0; font-size: 0.95rem; font-weight: 600; }
-    .group-details small { color: var(--text-secondary); font-size: 0.8rem; }
-
-    /* Messages Area */
-    .messages-area {
-      flex: 1;
-      overflow-y: auto;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
-      background-size: 24px 24px;
-    }
-
-    .message-bubble {
-      max-width: 65%;
-      padding: 12px 16px;
-      border-radius: 12px;
-      position: relative;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-      animation: fadeIn 0.3s ease;
-    }
-
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-    .message-bubble.sent {
-      background: var(--message-sent);
-      color: white;
-      align-self: flex-end;
-      border-bottom-right-radius: 4px;
-    }
-
-    .message-bubble.received {
-      background: var(--message-received);
-      color: var(--text-primary);
-      align-self: flex-start;
-      border-bottom-left-radius: 4px;
-    }
-
-    .msg-sender { font-size: 0.75rem; font-weight: 700; margin-bottom: 4px; color: #0f766e; }
-    .message-bubble.sent .msg-sender { display: none; }
-    
-    .msg-content { font-size: 0.95rem; line-height: 1.5; word-wrap: break-word; }
-    
-    .msg-time {
-      font-size: 0.7rem;
-      margin-top: 6px;
-      text-align: right;
-      opacity: 0.7;
-    }
-
-    /* Input Area */
-    .input-area {
-      background: white;
-      padding: 16px 24px;
-      border-top: 1px solid var(--border-color);
-      display: flex;
-      gap: 12px;
-      align-items: center;
-    }
-
-    .message-input {
-      flex: 1;
-      padding: 12px 16px;
-      border: 1px solid var(--border-color);
-      border-radius: 24px;
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .message-input:focus { border-color: var(--sidebar-active); box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1); }
-
-    .send-btn {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: var(--sidebar-active);
-      color: white;
-      border: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .send-btn:hover { background: #0f766e; transform: scale(1.05); }
-
-    /* Empty State */
-    .empty-state {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-secondary);
-    }
-    .empty-state i { font-size: 3rem; margin-bottom: 16px; opacity: 0.3; }
-
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-  </style>
-  <link rel="stylesheet" href="/css/chat-skin.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Safe WorkChat - Chats</title>
+<link rel="stylesheet" href="/vendor/bootstrap.min.css">
+<link rel="stylesheet" href="/vendor/all.min.css">
+<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/chat.css">
 <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
 <script src="/js/avatar.js"></script>
 </head>
-<body>
+<body class="chat-page">
+<div class="app">
+<aside class="sb"><div class="brand"><img src="/images/logo.svg" alt=""><div>Safe WorkChat<small>Secure Conversations</small></div></div>
+<a href="/pages/dashboard.html"><i class="fas fa-home"></i>Home</a>
+<a href="/pages/chat.html" class="active"><i class="fas fa-comment-dots"></i>Chats</a>
+<a href="/pages/groups.html"><i class="fas fa-users"></i>Groups</a>
+<a href="/pages/friends.html"><i class="fas fa-user-friends"></i>Friends</a>
+<a href="/pages/tasks.html"><i class="fas fa-tasks"></i>Tasks</a>
+<a href="/pages/documents.html"><i class="fas fa-file-alt"></i>Documents</a>
+<a href="/pages/calendar.html"><i class="fas fa-calendar-alt"></i>Calendar</a>
+<a href="/pages/notifications.html"><i class="fas fa-bell"></i>Notifications</a>
+<a href="/pages/profile.html"><i class="fas fa-user-circle"></i>Profile</a>
+<div class="sp"></div><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i>Logout</a></aside>
 
-  <div class="app-layout">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="logo-icon"><i class="fas fa-shield-alt"></i></div>
-        <span class="brand-text">Safe WorkChat</span>
+<div class="mn chatmn">
+  <div class="tb"><div class="search"><i class="fas fa-search"></i><input placeholder="Search chats, groups, or people..."></div><div class="conn">Connected to local MongoDB</div></div>
+
+  <div class="chat-container">
+    <!-- chat list -->
+    <div class="group-list-panel" id="groupListPanel">
+      <div class="panel-header">
+        <span>Chats</span>
+        <a href="/pages/groups.html" class="text-decoration-none" title="New group"><i class="fas fa-plus"></i></a>
       </div>
-      
-      <nav class="sidebar-nav">
-        <a href="/pages/dashboard.html" class="nav-item"><i class="fas fa-home"></i> Home</a>
-        <a href="/pages/chat.html" class="nav-item active"><i class="fas fa-comment-dots"></i> Chats</a>
-        <a href="/pages/groups.html" class="nav-item"><i class="fas fa-users"></i> Groups</a>
-        <a href="/pages/friends.html" class="nav-item"><i class="fas fa-user-friends"></i> Friends</a>
-        <a href="/pages/tasks.html" class="nav-item"><i class="fas fa-tasks"></i> Tasks</a>
-        <a href="/pages/calendar.html" class="nav-item"><i class="fas fa-calendar-alt"></i> Calendar</a>
-        <a href="/pages/documents.html" class="nav-item"><i class="fas fa-folder-open"></i> Documents</a>
-        <a href="#" class="nav-item mt-auto" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
-      </nav>
+      <div class="p-2 pb-0"><input id="groupSearch" class="fld" placeholder="Search chats..." autocomplete="off"></div>
+      <div id="chatTabs" class="ctabs"><button data-t="All" class="on">All</button><button data-t="Groups">Groups</button><button data-t="Direct">Direct</button></div>
+      <div class="group-scroll" id="groupList"><div class="p-3 text-center text-muted small">Loading chats...</div></div>
+    </div>
 
-      <div class="sidebar-footer">
-        <div class="user-avatar" id="sidebarAvatar">U</div>
-        <div class="user-info">
-          <h6 id="sidebarName">User</h6>
-          <small>Online</small>
-        </div>
-      </div>
-    </aside>
-
-    <!-- Main Chat Wrapper -->
-    <div class="chat-wrapper">
+    <!-- conversation -->
+    <div class="chat-right">
       <div class="chat-header" id="chatHeader" style="display: none;">
         <button id="backBtn" class="back-btn" aria-label="Back to chats"><i class="fas fa-chevron-left"></i></button>
-        <img id="hdrAv" class="av" width="40" height="40" alt="" style="margin-right:10px">
+        <img id="hdrAv" class="av" width="40" height="40" alt="">
         <div class="chat-header-info">
-          <h5 id="currentGroupName">Select a Group</h5>
+          <h5 id="currentGroupName">Select a chat</h5>
           <small id="currentGroupRole"></small>
           <small id="encBadge" class="enc-badge"></small>
         </div>
-        <button id="infoBtn" class="info-btn" aria-label="Group info"><i class="fas fa-info-circle"></i></button>
         <div id="rolePills" class="pills"><span class="pill" data-r="Admin">Admin</span><span class="pill" data-r="Manager">Manager</span><span class="pill" data-r="User">User</span></div>
-        <button class="btn btn-sm btn-outline-primary" onclick="location.href='/pages/groups.html'">
-          <i class="fas fa-plus me-1"></i> New Group
-        </button>
+        <button id="infoBtn" class="info-btn" aria-label="Group info"><i class="fas fa-info-circle"></i></button>
       </div>
 
-      <div class="chat-container">
-        <!-- Group List Panel -->
-        <div class="group-list-panel" id="groupListPanel">
-          <div class="panel-header">
-            <span>Chats</span>
-            <a href="/pages/groups.html" class="text-decoration-none" title="New group"><i class="fas fa-plus"></i></a>
-          </div>
-          <div class="p-2 pb-0"><input id="groupSearch" class="form-control form-control-sm" placeholder="Search chats..." autocomplete="off"></div>
-          <div id="chatTabs" class="ctabs"><button data-t="All" class="on">All</button><button data-t="Groups">Groups</button><button data-t="Direct">Direct</button></div>
-          <div class="group-scroll" id="groupList">
-            <div class="p-3 text-center text-muted small">Loading groups...</div>
-          </div>
-        </div>
-
-        <!-- Messages Area -->
-        <div class="messages-area" id="messagesArea">
-          <div class="empty-state">
-            <i class="fas fa-comments"></i>
-            <h5>Welcome to Safe WorkChat</h5>
-            <p>Select a group from the left to start collaborating.</p>
-          </div>
+      <div class="messages-area" id="messagesArea">
+        <div class="empty-state">
+          <img src="/images/empty.svg" width="130" alt="">
+          <h5>Welcome to Safe WorkChat</h5>
+          <p>Select a chat on the left to start. Everything you send is end-to-end encrypted.</p>
         </div>
       </div>
 
-      <!-- Input Area -->
       <div class="input-area" id="inputArea" style="display: none;">
         <input type="text" class="message-input" id="messageInput" placeholder="Type a message..." maxlength="2000" autocomplete="off">
-        <button class="send-btn" id="sendBtn"><i class="fas fa-paper-plane"></i></button>
+        <button class="send-btn" id="sendBtn" aria-label="Send"><i class="fas fa-paper-plane"></i></button>
       </div>
     </div>
   </div>
+</div>
+</div>
 
-  <div class="modal fade" id="membersModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-    <div class="modal-header"><h5 class="modal-title" id="mmTitle">Group</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
-    <div class="modal-body" id="mmBody">Loading…</div></div></div></div>
+<div class="modal fade" id="membersModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title" id="mmTitle">Group</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body" id="mmBody">Loading…</div></div></div></div>
 
-  <!-- Create Group Modal -->
-  
-  <script src="/vendor/bootstrap.bundle.min.js"></script>
-  <script src="/vendor/socket.io.min.js"></script>
-  <script src="/vendor/nacl-fast.min.js"></script>
-  <script src="/js/e2ee.js"></script>
-  <script src="/js/chat.js"></script>
-  <script src="/js/nav.js"></script>
+<script src="/vendor/bootstrap.bundle.min.js"></script>
+<script src="/vendor/socket.io.min.js"></script>
+<script src="/vendor/nacl-fast.min.js"></script>
+<script src="/js/e2ee.js"></script>
+<script src="/js/chat.js"></script>
+<script src="/js/nav.js"></script>
 </body>
 </html>

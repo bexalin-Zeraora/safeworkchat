@@ -20,7 +20,7 @@ const ago = (d) => { const m = Math.max(0, (Date.now() - new Date(d)) / 60000); 
 async function list() {
   let scope = 'all', term = '';
   const groups = await api('/api/groups/my-groups');
-  const manageable = groups.filter((g) => g.myRole === 'Admin' || g.myRole === 'Manager');
+  const manageable = groups.filter((g) => !g.isDirect && (g.myRole === 'Admin' || g.myRole === 'Manager'));
   view.innerHTML = `<div class="cd" style="padding:0"><div class="d-flex align-items-center p-3"><b><i class="far fa-folder-open me-2"></i>Documents</b>
     ${manageable.length ? '<button id="nb" class="btn-s ms-auto"><i class="fas fa-plus"></i> New</button>' : ''}</div>
     <div class="px-3"><input id="sq" class="fld" placeholder="Search documents..."></div>

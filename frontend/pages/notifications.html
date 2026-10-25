@@ -1,0 +1,28 @@
+<!DOCTYPE html><html lang="en"><head>
+<script src="/js/session.js"></script><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Safe WorkChat - Notifications</title>
+<link rel="stylesheet" href="/vendor/bootstrap.min.css"><link rel="stylesheet" href="/vendor/all.min.css"><link rel="stylesheet" href="/css/app.css"><link rel="stylesheet" href="/css/tasks.css">
+<link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+<script src="/js/avatar.js"></script>
+</head>
+<body><div class="app">
+<aside class="sb"><div class="brand"><img src="/images/logo.svg" alt=""><div>Safe WorkChat<small>Secure Conversations</small></div></div>
+<a href="/pages/dashboard.html"><i class="fas fa-home"></i>Home</a>
+<a href="/pages/chat.html"><i class="fas fa-comment-dots"></i>Chats</a>
+<a href="/pages/groups.html"><i class="fas fa-users"></i>Groups</a>
+<a href="/pages/friends.html"><i class="fas fa-user-friends"></i>Friends</a>
+<a href="/pages/tasks.html"><i class="fas fa-tasks"></i>Tasks</a>
+<a href="/pages/documents.html"><i class="fas fa-file-alt"></i>Documents</a>
+<a href="/pages/calendar.html"><i class="fas fa-calendar-alt"></i>Calendar</a>
+<a href="/pages/notifications.html" class="active"><i class="fas fa-bell"></i>Notifications</a>
+<a href="/pages/profile.html"><i class="fas fa-user-circle"></i>Profile</a>
+<div class="sp"></div><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i>Logout</a></aside>
+<div class="mn"><div class="tb"><div class="search"><i class="fas fa-search"></i><input placeholder="Search chats, groups, or people..."></div><div class="conn">Connected to local MongoDB</div></div>
+<div class="pg pgw">
+<div class="cd" style="padding:0"><div class="p-3 d-flex align-items-center gap-2 flex-wrap"><b><i class="fas fa-bell me-2"></i>Notifications</b>
+<button id="readAll" class="btn btn-outline-secondary btn-sm ms-auto">Mark all read</button><button id="clearRead" class="btn btn-outline-danger btn-sm">Clear read</button></div>
+<div class="px-3 pb-2 small text-muted">Notifications stay here until you read them, even after you log out and back in.</div>
+<div class="tabs" id="nt"><button data-f="all" class="on">All <span id="cAll"></span></button><button data-f="unread">Unread <span id="cUnread"></span></button></div>
+<div id="list" class="px-2 pb-2">Loading…</div>
+<div class="p-3 border-top small" id="desk"></div></div>
+</div></div></div>
+<script src="/vendor/bootstrap.bundle.min.js"></script><script src="/js/notifications.js"></script><script src="/js/nav.js"></script></body></html>

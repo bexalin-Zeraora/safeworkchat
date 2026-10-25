@@ -63,7 +63,7 @@ if (require.main !== module) return;
   const file = path.resolve(opt('file', path.join(__dirname, 'names.txt')));
   const password = opt('password', 'Test@12345');
   const withKeys = !args.includes('--no-keys');
-  if (typeof password !== 'string' || password.length < 6) { console.error('Password must be at least 6 characters.'); process.exit(1); }
+  { const bad = require('../utils_validate').checkPassword(password, {}); if (bad) { console.error('❌ ' + bad + '\nChoose a stronger --password (8+ characters with upper, lower, number and a special character).'); process.exit(1); } }
 
   let names, entries;
   try { entries = parseEntries(fs.readFileSync(file, 'utf8')); names = entries.map((e) => e.name); } catch (e) { console.error('❌ ' + e.message); process.exit(1); }
