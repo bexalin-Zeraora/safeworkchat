@@ -27,7 +27,7 @@
 <div class="sp"></div><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i>Logout</a></aside>
 
 <div class="mn chatmn">
-  <div class="tb"><div class="search"><i class="fas fa-search"></i><input placeholder="Search chats, groups, or people..."></div><div class="conn">Connected to local MongoDB</div></div>
+  <div class="tb"><div class="search"><i class="fas fa-search"></i><input placeholder="Search chats, groups, or people..."></div><div class="conn">Connected to database</div></div>
 
   <div class="chat-container">
     <!-- chat list -->
@@ -64,6 +64,15 @@
       </div>
 
       <div class="input-area" id="inputArea" style="display: none;">
+        <div class="plus-wrap" id="plusWrap">
+          <button type="button" class="plus-btn" id="plusBtn" aria-label="Add a task or document" aria-haspopup="true" aria-expanded="false"><i class="fas fa-plus"></i></button>
+          <div class="plus-menu" id="plusMenu" hidden>
+            <button type="button" data-act="task"><i class="fas fa-clipboard-list"></i><span>Assign a task<small>Give work to a member of this group</small></span></button>
+            <button type="button" data-act="doc"><i class="fas fa-file-alt"></i><span>New document<small>Create one the group can open</small></span></button>
+            <button type="button" data-act="share"><i class="fas fa-paperclip"></i><span>Share a document<small>Post a link to one in this chat</small></span></button>
+            <div class="plus-hint" id="plusHint"></div>
+          </div>
+        </div>
         <input type="text" class="message-input" id="messageInput" placeholder="Type a message..." maxlength="2000" autocomplete="off">
         <button class="send-btn" id="sendBtn" aria-label="Send"><i class="fas fa-paper-plane"></i></button>
       </div>
@@ -71,6 +80,32 @@
   </div>
 </div>
 </div>
+
+<div class="modal fade" id="chatTaskModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title"><i class="fas fa-clipboard-list me-2 text-success"></i>Assign a task</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body">
+    <div id="ctErr" class="text-danger small mb-2"></div>
+    <label class="lbl">Task title</label><input id="ctTitle" class="fld" maxlength="120" placeholder="e.g. Finish backend API">
+    <label class="lbl">Description (optional)</label><textarea id="ctDesc" class="fld" rows="2"></textarea>
+    <div class="row g-2"><div class="col-7"><label class="lbl">Assign to</label><select id="ctAssignee" class="fld"></select></div><div class="col-5"><label class="lbl">Priority</label><select id="ctPriority" class="fld"><option>Low</option><option selected>Medium</option><option>High</option></select></div></div>
+    <label class="lbl">Deadline</label><input id="ctDue" type="datetime-local" class="fld">
+    <div class="small text-muted mt-2">The person plans the phases of the work themselves. A notice is posted in this chat.</div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button id="ctSave" class="btn btn-success">Assign task</button></div></div></div></div>
+
+<div class="modal fade" id="chatDocModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title"><i class="fas fa-file-alt me-2 text-success"></i>New document</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body">
+    <div id="cdErr" class="text-danger small mb-2"></div>
+    <label class="lbl">Title</label><input id="cdTitle" class="fld" maxlength="120" placeholder="e.g. Meeting notes">
+    <label class="lbl">Type</label><select id="cdType" class="fld"><option value="docx">Word (.docx)</option><option value="md">Markdown (.md)</option><option value="txt">Text (.txt)</option></select>
+    <div class="small text-muted mt-2">A link to the document is posted in this chat.</div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button id="cdSave" class="btn btn-success">Create document</button></div></div></div></div>
+
+<div class="modal fade" id="chatShareModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title"><i class="fas fa-paperclip me-2 text-success"></i>Share a document</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body"><div id="csErr" class="text-danger small mb-2"></div><div id="csList" class="small text-muted">Loading…</div></div></div></div></div>
 
 <div class="modal fade" id="membersModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
   <div class="modal-header"><h5 class="modal-title" id="mmTitle">Group</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>

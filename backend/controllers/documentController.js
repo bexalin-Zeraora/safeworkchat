@@ -2,6 +2,7 @@ const { Document: DocxDocument, Packer, Paragraph, TextRun } = require('docx');
 const Doc = require('../models/Document');
 const DocumentVersion = require('../models/DocumentVersion');
 const GroupMember = require('../models/GroupMember');
+const { postSystemMessage } = require('../utils_notify');
 
 const TYPES = ['txt', 'md', 'docx'];
 const MAX_OPS_BYTES = 800 * 1024;
@@ -91,6 +92,7 @@ exports.create = async (req, res) => {
     }
     const doc = await Doc.create({ groupId, title: title.trim(), type: TYPES.includes(type) ? type : 'docx', createdBy: req.user._id, updatedBy: req.user._id });
     await DocumentVersion.create({ documentId: doc._id, version: 1, ops: doc.ops, savedBy: req.user._id, note: 'Created' });
+    await postSystemMessage(req.app.get('io'), groupId, req.user._id, `📄 ${req.user.username} created the document “${doc.title}.${doc.type}”.`, `/pages/documents.html?id=${doc._id}&edit=1`);
     res.status(201).json(doc);
   } catch (e) { err(res, e); }
 };
@@ -103,6 +105,15 @@ async function load(req, res) {
   if (!m) { res.status(403).json({ message: 'Not a member of this group' }); return null; }
   return { doc, canEdit: manage(m) };
 }
+
+// POST /api/documents/:id/share  -> puts a link to the document in the group chat (any member of the group)
+exports.share = async (req, res) => {
+  try {
+    const c = await load(req, res); if (!c) return;
+    await postSystemMessage(req.app.get('io'), c.doc.groupId._id, req.user._id, `📎 ${req.user.username} shared the document “${c.doc.title}.${c.doc.type}”.`, `/pages/documents.html?id=${c.doc._id}`);
+    res.json({ ok: true });
+  } catch (e) { err(res, e); }
+};
 
 exports.get = async (req, res) => {
   try { const c = await load(req, res); if (c) res.json({ ...c.doc.toObject(), canEdit: c.canEdit }); } catch (e) { err(res, e); }

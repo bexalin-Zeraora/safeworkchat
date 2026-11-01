@@ -172,6 +172,7 @@ async function selectGroup(groupId, name, role) {
   
   document.getElementById('chatHeader').style.display = 'flex';
   document.getElementById('inputArea').style.display = 'flex';
+  updatePlus();
   document.getElementById('currentGroupName').textContent = name;
   const badge = document.getElementById('encBadge');
   const info = groupInfo(groupId);
@@ -223,6 +224,9 @@ function appendMessage(msg) {
     const note = document.createElement('div');
     note.className = 'system-msg';
     note.textContent = msg.content;
+    if (typeof msg.link === 'string' && /^\/pages\//.test(msg.link)) {   // "Open" button to the task / document
+      const a = document.createElement('a'); a.className = 'sys-link'; a.href = msg.link; a.textContent = 'Open'; note.appendChild(a);
+    }
     area.appendChild(note); area.scrollTop = area.scrollHeight;
     return;
   }
@@ -307,7 +311,85 @@ async function openInfo() {
   } catch (e) { document.getElementById('mmBody').textContent = 'Could not load members.'; }
 }
 
+// ================= "+" menu: assign a task / new document / share a document =================
+const $q = (id) => document.getElementById(id);
+const isManager = () => ['Admin', 'Manager'].includes(groupInfo(currentGroupId).myRole);
+async function apiJson(path, method = 'GET', body) {
+  const r = await fetch(`${API_URL}${path}`, { method, headers: { 'Authorization': `Bearer ${authToken}`, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.message || 'Something went wrong');
+  return d;
+}
+function closePlus() { document.body.classList.remove('plus-open'); $q('plusMenu').hidden = true; $q('plusBtn').setAttribute('aria-expanded', 'false'); $q('plusHint').textContent = ''; }
+function updatePlus() {
+  const info = groupInfo(currentGroupId), mgr = isManager();
+  $q('plusWrap').style.display = info.isDirect ? 'none' : '';          // one-to-one chats have no group tasks or documents
+  document.querySelectorAll('#plusMenu button[data-act]').forEach((b) => {
+    const needs = b.dataset.act !== 'share';
+    b.classList.toggle('off', needs && !mgr);
+    b.title = needs && !mgr ? 'Only group Admins and Managers can do this' : '';
+  });
+  closePlus();
+}
+const modalOf = (id) => bootstrap.Modal.getOrCreateInstance($q(id));
+const tomorrow5pm = () => { const d = new Date(Date.now() + 86400000); d.setHours(17, 0, 0, 0); const p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T17:00`; };
+
+async function openTaskModal() {
+  $q('ctTitle').value = ''; $q('ctDesc').value = ''; $q('ctErr').textContent = ''; $q('ctDue').value = tomorrow5pm(); $q('ctPriority').value = 'Medium';
+  $q('ctAssignee').innerHTML = '<option>Loading…</option>';
+  modalOf('chatTaskModal').show();
+  try {
+    const m = await apiJson(`/groups/${currentGroupId}/members`);
+    $q('ctAssignee').innerHTML = m.map((x) => `<option value="${esc(x._id)}">${esc(x.username)} (${esc(x.role === 'Member' ? 'User' : x.role)})</option>`).join('');
+  } catch (e) { $q('ctErr').textContent = e.message; }
+}
+async function saveTask() {
+  try {
+    $q('ctSave').disabled = true;
+    await apiJson('/tasks', 'POST', { groupId: currentGroupId, title: $q('ctTitle').value.trim(), description: $q('ctDesc').value, assignedTo: $q('ctAssignee').value, priority: $q('ctPriority').value, dueDate: new Date($q('ctDue').value).toISOString() });
+    modalOf('chatTaskModal').hide();           // the notice with an "Open" button arrives in the chat by itself
+  } catch (e) { $q('ctErr').textContent = e.message; }
+  $q('ctSave').disabled = false;
+}
+function openDocModal() { $q('cdTitle').value = ''; $q('cdErr').textContent = ''; modalOf('chatDocModal').show(); }
+async function saveDoc() {
+  try {
+    $q('cdSave').disabled = true;
+    await apiJson('/documents', 'POST', { groupId: currentGroupId, title: $q('cdTitle').value, type: $q('cdType').value });
+    modalOf('chatDocModal').hide();
+  } catch (e) { $q('cdErr').textContent = e.message; }
+  $q('cdSave').disabled = false;
+}
+async function openShareModal() {
+  $q('csErr').textContent = ''; $q('csList').textContent = 'Loading…'; modalOf('chatShareModal').show();
+  try {
+    const docs = (await apiJson('/documents?scope=all')).filter((d) => d.groupId && d.groupId._id === currentGroupId);
+    $q('csList').textContent = '';
+    if (!docs.length) { $q('csList').textContent = 'This group has no documents yet. Use "New document" first.'; return; }
+    docs.forEach((d) => {
+      const row = document.createElement('div'); row.className = 'plus-row';
+      row.innerHTML = `<i class="far fa-file-alt"></i><span></span><small></small>`;
+      row.children[1].textContent = `${d.title}.${d.type}`; row.children[2].textContent = `version ${d.currentVersion}`;
+      row.onclick = async () => { try { await apiJson(`/documents/${d._id}/share`, 'POST'); modalOf('chatShareModal').hide(); } catch (e) { $q('csErr').textContent = e.message; } };
+      $q('csList').appendChild(row);
+    });
+  } catch (e) { $q('csErr').textContent = e.message; $q('csList').textContent = ''; }
+}
+
+function setupPlusMenu() {
+  $q('plusBtn').onclick = (e) => { e.stopPropagation(); const open = $q('plusMenu').hidden; closePlus(); if (open) { $q('plusMenu').hidden = false; document.body.classList.add('plus-open'); $q('plusBtn').setAttribute('aria-expanded', 'true'); } };
+  document.addEventListener('click', (e) => { if (!$q('plusWrap').contains(e.target)) closePlus(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePlus(); });
+  document.querySelectorAll('#plusMenu button[data-act]').forEach((b) => b.onclick = () => {
+    if (b.classList.contains('off')) { $q('plusHint').textContent = 'Only group Admins and Managers can assign tasks or create documents.'; return; }
+    const act = b.dataset.act; closePlus();
+    if (act === 'task') openTaskModal(); else if (act === 'doc') openDocModal(); else openShareModal();
+  });
+  $q('ctSave').onclick = saveTask; $q('cdSave').onclick = saveDoc;
+}
+
 function setupEventListeners() {
+  setupPlusMenu();
   const refresh = async () => { await loadGroups(); if (currentGroupId) { const g = groupInfo(currentGroupId); if (g._id) openGroup(g); } };
   socket.on('groupKeyChanged', refresh);
   socket.on('groupsChanged', loadGroups);

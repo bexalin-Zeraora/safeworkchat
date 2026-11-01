@@ -17,6 +17,7 @@ async function api(path, method = 'GET', body, headers = {}) {
 let me = null;
 function show(u) {
   me = u;
+  renderGoogle();
   $('un').value = u.username; $('bio').value = u.bio || ''; $('em').value = u.email;
   $('pic').src = avUrl(u.username) + '?t=' + Date.now();
   const chip = document.querySelector('.uchip');   // top bar: show the new name and picture straight away
@@ -67,3 +68,37 @@ $('savePw').onclick = async () => {
 api('/users/me').then(show).catch((e) => say('detMsg', e.message, false));
 
 PasswordRules.attach($('np'), $('npRules'), () => ({ username: me && me.username, email: me && me.email }), $('np2'));
+
+
+// ---------- Google sign-in: connect / disconnect ----------
+let gCfg = null, gInit = false;
+const loadScript = (src) => new Promise((ok, no) => { const el = document.createElement('script'); el.src = src; el.async = true; el.onload = ok; el.onerror = no; document.head.appendChild(el); });
+async function renderGoogle() {
+  if (!me) return;
+  // a Google-only account has no password to change
+  $('pwCard').hidden = !me.hasPassword;
+  try { gCfg = gCfg || await (await fetch('/api/auth/config')).json(); } catch (e) { return; }
+  if (!gCfg.googleClientId) { $('gCard').hidden = true; if (!me.hasPassword) { $('pwCard').hidden = false; } return; }
+  $('gCard').hidden = false;
+  $('gBtn').textContent = '';
+  $('gOff').hidden = !me.googleLinked;
+  if (me.googleLinked) {
+    $('gState').innerHTML = '<i class="fas fa-check-circle text-success me-1"></i>Google is connected. You can sign in with the Google button' + (me.hasPassword ? ' or with your password.' : '. This account has no password; your encryption passphrase protects your chats.');
+    $('gOff').disabled = !me.hasPassword; $('gOff').title = me.hasPassword ? '' : 'Google is your only way to sign in';
+    return;
+  }
+  $('gState').textContent = 'Connect your Google account to sign in with one click. Your password keeps working.';
+  try {
+    if (!window.google || !google.accounts) await loadScript('https://accounts.google.com/gsi/client');
+    if (!gInit) { google.accounts.id.initialize({ client_id: gCfg.googleClientId, callback: onLinkCredential, ux_mode: 'popup' }); gInit = true; }
+    google.accounts.id.renderButton($('gBtn'), { theme: 'outline', size: 'large', text: 'continue_with', width: 280 });
+  } catch (e) { $('gState').textContent = 'Google could not be loaded right now.'; }
+}
+async function onLinkCredential(resp) {
+  try { const r = await api('/auth/google/link', 'POST', { credential: resp.credential }); show(await api('/users/me')); say('gMsg', 'Google connected (' + r.email + ').', true); }
+  catch (e) { say('gMsg', e.message, false); }
+}
+$('gOff').onclick = async () => {
+  if (!confirm('Disconnect Google from this account?')) return;
+  try { await api('/auth/google', 'DELETE'); show(await api('/users/me')); say('gMsg', 'Google disconnected.', true); } catch (e) { say('gMsg', e.message, false); }
+};

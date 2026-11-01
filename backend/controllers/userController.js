@@ -17,7 +17,7 @@ function imageType(b) {
   return null;
 }
 
-const shape = (u) => ({ _id: u._id, username: u.username, email: u.email, bio: u.bio || '', hasAvatar: !!u.avatar, createdAt: u.createdAt });
+const shape = (u) => ({ _id: u._id, username: u.username, email: u.email, bio: u.bio || '', hasAvatar: !!u.avatar, createdAt: u.createdAt, hasPassword: !!u.password, googleLinked: !!u.googleId });
 
 // GET /api/users/me
 exports.me = async (req, res) => res.json(shape(await User.findById(req.user._id)));

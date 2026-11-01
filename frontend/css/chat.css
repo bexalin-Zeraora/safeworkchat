@@ -63,9 +63,8 @@ body.chat-page .app{height:100vh;min-height:0}
 /* phone: list first, conversation after tapping a chat */
 @media(max-width:900px){
   body.chat-page{height:auto}
-  .chatmn{height:100vh}
-  .chat-container{margin:0;border:0;border-radius:0;height:calc(100vh - 58px - 56px)}
-  body.in-chat .chat-container{height:calc(100vh - 58px)}
+  .chatmn{height:calc(100vh - 58px);height:calc(100dvh - 58px)}      /* leave room for the bottom tab bar */
+  .chat-container{margin:0;border:0;border-radius:0}
   body.in-chat .tb{display:none}
   .group-list-panel{width:100%;border-right:0}
   .chat-right{display:none}
@@ -89,7 +88,36 @@ body.chat-page .app{height:100vh;min-height:0}
 [data-theme=dark] .modal-content{background:#14262a;color:#e6f0ee}
 
 /* notification cards must not cover the message box */
-body.chat-page .sstack{bottom:84px}
+/* desktop: park them in the empty space under the chat list, never over the conversation */
+@media(min-width:901px){ body.chat-page .sstack{left:214px;right:auto;bottom:28px;width:288px} }
 @media(max-width:900px){ body.chat-page .sstack{bottom:70px} body.chat-page.in-chat .sstack{bottom:132px} }
 .group-list-panel .fld{border:1px solid var(--bd);outline:0;box-shadow:none}
 .group-list-panel .fld:focus{border-color:var(--g);box-shadow:0 0 0 3px rgba(16,164,99,.15)}
+
+/* "+" menu in the message box */
+.plus-wrap{position:relative;flex:none}
+.plus-btn{width:42px;height:42px;border-radius:50%;border:1px solid var(--bd);background:#fff;color:var(--g2);font-size:1rem;cursor:pointer;transition:transform .15s,background .15s}
+.plus-btn:hover{background:#e9f7f0}
+.plus-btn[aria-expanded=true]{transform:rotate(45deg);background:#e9f7f0}
+.plus-menu{position:absolute;bottom:52px;left:0;width:290px;background:#fff;border:1px solid var(--bd);border-radius:14px;box-shadow:0 14px 34px rgba(0,0,0,.2);padding:6px;z-index:30}
+.plus-menu[hidden]{display:none}
+.plus-menu button{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;padding:10px 12px;border-radius:10px;text-align:left;cursor:pointer;color:var(--tx)}
+.plus-menu button:hover{background:#f1faf6}
+.plus-menu button i{width:34px;height:34px;border-radius:9px;background:#dff5ea;color:var(--g2);display:flex;align-items:center;justify-content:center;flex:none}
+.plus-menu button span{font-size:.9rem;font-weight:600;line-height:1.2}
+.plus-menu button small{display:block;font-weight:400;color:var(--mut);font-size:.72rem;margin-top:1px}
+.plus-menu button.off{opacity:.45}
+.plus-hint{padding:4px 12px 6px;font-size:.74rem;color:#c2410c}
+.plus-hint:empty{display:none}
+.sys-link{margin-left:8px;font-weight:700;color:var(--g2);text-decoration:underline;white-space:nowrap}
+[data-theme=dark] .plus-btn,[data-theme=dark] .plus-menu{background:#14262a;border-color:#22393e}
+[data-theme=dark] .plus-menu button:hover{background:#1a3036}
+[data-theme=dark] .plus-menu button i{background:#16372f}
+[data-theme=dark] .sys-link{color:#3ddc97}
+@media(max-width:900px){.plus-menu{width:min(290px,calc(100vw - 32px))}}
+
+.plus-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--bd);border-radius:10px;margin-bottom:6px;cursor:pointer;color:var(--tx)}
+.plus-row:hover{background:#f1faf6;border-color:var(--g)}
+.plus-row i{color:var(--g2)}.plus-row span{font-weight:600;font-size:.88rem;flex:1}
+[data-theme=dark] .plus-row:hover{background:#16372f}
+body.plus-open .sstack{display:none}   /* the menu must never be covered by a notification card */

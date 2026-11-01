@@ -7,6 +7,7 @@ router.get('/', protect, c.list);
 router.post('/', protect, c.create);
 router.get('/:id', protect, c.get);
 router.put('/:id', protect, c.save);
+router.post('/:id/share', protect, c.share);
 router.get('/:id/versions', protect, c.versions);
 router.get('/:id/versions/:v', protect, c.getVersion);
 router.post('/:id/restore/:v', protect, c.restore);

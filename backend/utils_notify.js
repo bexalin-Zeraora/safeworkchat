@@ -12,8 +12,9 @@ async function notifyUser(io, data) {
 }
 
 // plain-text notice in the group chat (shown centred, not encrypted: it only says what happened to a task)
-async function postSystemMessage(io, groupId, senderId, content) {
-  const m = await Message.create({ groupId, senderId, content: String(content).slice(0, 500), type: 'system', encrypted: false });
+async function postSystemMessage(io, groupId, senderId, content, link = '') {
+  const safeLink = typeof link === 'string' && /^\/pages\/[A-Za-z0-9_.?=&%\-]+$/.test(link) ? link : '';   // never an outside address
+  const m = await Message.create({ groupId, senderId, content: String(content).slice(0, 500), type: 'system', encrypted: false, link: safeLink });
   if (io) {
     const populated = await Message.findById(m._id).populate('senderId', 'username');
     io.to(String(groupId)).emit('receiveMessage', populated);

@@ -186,3 +186,86 @@ checkAuth();
 PasswordRules.attach(document.getElementById('regPassword'), document.getElementById('pwRules'),
   () => ({ username: document.getElementById('regUsername').value, email: document.getElementById('regEmail').value }), document.getElementById('regPassword2'));
 ['regUsername', 'regEmail'].forEach((id) => document.getElementById(id).addEventListener('input', () => document.getElementById('regPassword').dispatchEvent(new Event('input'))));
+
+
+// ================= Sign in with Google =================
+// Google proves WHO you are. Your chats are protected by a key only you can open, so after Google you
+// type your encryption passphrase (for a password account: your account password).
+function loadScript(src) { return new Promise((ok, no) => { const el = document.createElement('script'); el.src = src; el.async = true; el.onload = ok; el.onerror = no; document.head.appendChild(el); }); }
+
+function askSecret({ mode, hasPassword, backup, token, username, email }) {
+  return new Promise((resolve) => {
+    const $ = (id) => document.getElementById(id);
+    const modal = $('secretModal'), err = $('smErr'), pass = $('smPass'), pass2 = $('smPass2');
+    const create = mode === 'create';
+    $('smTitle').textContent = create ? 'Create your encryption passphrase' : (hasPassword ? 'Enter your account password' : 'Enter your encryption passphrase');
+    $('smText').textContent = create
+      ? 'Google confirms who you are. This passphrase protects the key that encrypts your chats, so even the server cannot read your messages. You will type it every time you sign in. If you forget it, old messages cannot be recovered.'
+      : (hasPassword ? 'Your chats are locked with your account password. Enter it to open them.' : 'Enter the encryption passphrase you created to open your chats.');
+    $('smCreate').hidden = !create; pass.value = ''; pass2.value = ''; err.textContent = '';
+    pass.placeholder = create ? 'Choose a passphrase' : (hasPassword ? 'Account password' : 'Encryption passphrase');
+    pass.autocomplete = create ? 'new-password' : 'current-password';
+    let render = null;
+    if (create) render = PasswordRules.attach(pass, $('smRules'), () => ({ username, email }), pass2);
+    modal.hidden = false; setTimeout(() => pass.focus(), 50);
+
+    const done = (v) => { modal.hidden = true; $('smOk').onclick = $('smCancel').onclick = null; pass.onkeydown = pass2.onkeydown = null; resolve(v); };
+    const busy = (b, t) => { $('smOk').disabled = b; $('smOk').textContent = t || 'Continue'; };
+    const submit = async () => {
+      err.textContent = '';
+      if (!pass.value) { err.textContent = 'Please type it first.'; return; }
+      busy(true, 'Working…'); await new Promise((r) => setTimeout(r, 30));
+      try {
+        if (!create) {
+          const sk = E2EE.unlock(backup, pass.value);
+          if (!sk) { err.textContent = 'That is not right. Try again.'; busy(false); return; }
+          return done(sk);
+        }
+        const problem = PasswordRules.firstProblem(pass.value, { username, email });
+        if (problem) { err.textContent = problem + '.'; busy(false); return; }
+        if (pass.value !== pass2.value) { err.textContent = 'The two passphrases do not match.'; busy(false); return; }
+        const keys = E2EE.genKeys();
+        const res = await fetch(`${API_URL}/keys`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify({ publicKey: keys.pk, keyBackup: E2EE.backup(keys.sk, pass.value) }) });
+        if (!res.ok) { err.textContent = ((await res.json().catch(() => ({}))).message) || 'Could not save your keys.'; busy(false); return; }
+        return done({ pk: keys.pk, sk: keys.sk });
+      } catch (e) { err.textContent = 'Something went wrong. Please try again.'; busy(false); }
+    };
+    $('smOk').onclick = submit; $('smCancel').onclick = () => done(null);
+    pass.onkeydown = pass2.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } };
+  });
+}
+
+async function onGoogleCredential(resp) {
+  try {
+    showAlert('Signing in with Google…', 'info');
+    const r = await fetch(`${API_URL}/google`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ credential: resp.credential }) });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) return showAlert(data.message || 'Google sign-in failed.');
+    if (data.publicKey && data.keyBackup) {
+      const sk = await askSecret({ mode: 'unlock', hasPassword: data.hasPassword, backup: data.keyBackup });
+      if (!sk) return showAlert('Sign-in cancelled.');
+      storeKeys(data.publicKey, sk);
+    } else {
+      const made = await askSecret({ mode: 'create', token: data.token, username: data.username, email: data.email });
+      if (!made) return showAlert('Sign-in cancelled. You need an encryption passphrase to use the chats.');
+      storeKeys(made.pk, made.sk);
+    }
+    saveSession(data);
+    showAlert(data.isNew ? 'Account created! Redirecting...' : 'Login successful! Redirecting...', 'success');
+    setTimeout(() => { window.location.href = '/pages/dashboard.html'; }, 800);
+  } catch (e) { showAlert('Google sign-in failed. Please try again.'); }
+}
+
+(async function initGoogle() {
+  try {
+    const cfg = await (await fetch(`${API_URL}/config`)).json();
+    if (!cfg.googleClientId) return;                                     // not configured: no Google button
+    await loadScript('https://accounts.google.com/gsi/client');
+    google.accounts.id.initialize({ client_id: cfg.googleClientId, callback: onGoogleCredential, ux_mode: 'popup' });
+    [['googleBlock', 'googleBtn'], ['googleBlockReg', 'googleBtnReg']].forEach(([block, box]) => {
+      document.getElementById(block).classList.remove('hidden');
+      const w = Math.min(360, Math.max(200, document.getElementById(box).parentElement.clientWidth || 320));
+      google.accounts.id.renderButton(document.getElementById(box), { theme: 'outline', size: 'large', text: 'continue_with', shape: 'rectangular', logo_alignment: 'center', width: w });
+    });
+  } catch (e) { /* offline or Google blocked: the normal login still works */ }
+})();

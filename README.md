@@ -21,3 +21,6 @@ Offline-first, real-time workplace collaboration app (chat, tasks, calendar, doc
 | PATCH | `/api/tasks/:id` | status: assignee/Admin/Manager; details: Admin/Manager |
 | GET | `/api/tasks/:id/activity` | group members |
 | GET | `/api/groups/:id/members` | group members |
+
+## Deploying online
+See `docs/DEPLOY_ONLINE.md` for MongoDB Atlas, Google sign-in and hosting steps, and `docs/DEMO_AND_TEST_GUIDE.md` for demo data and test cases.

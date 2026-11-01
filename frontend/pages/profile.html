@@ -16,7 +16,7 @@
 <a href="/pages/notifications.html"><i class="fas fa-bell"></i>Notifications</a>
 <a href="/pages/profile.html" class="active"><i class="fas fa-user-circle"></i>Profile</a>
 <div class="sp"></div><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i>Logout</a></aside>
-<div class="mn"><div class="tb"><div class="search"><i class="fas fa-search"></i><input placeholder="Search chats, groups, or people..."></div><div class="conn">Connected to local MongoDB</div></div>
+<div class="mn"><div class="tb"><div class="search"><i class="fas fa-search"></i><input placeholder="Search chats, groups, or people..."></div><div class="conn">Connected to database</div></div>
 <div class="pg pgw">
 <div class="cd mb-3"><div class="fw-bold mb-3"><i class="fas fa-camera me-2"></i>Profile picture</div>
 <div class="d-flex align-items-center gap-3 flex-wrap"><img id="pic" class="av" width="96" height="96" alt="" style="width:96px;height:96px">
@@ -30,7 +30,10 @@
 <label class="lbl">Email (cannot be changed)</label><input id="em" class="fld" disabled>
 <div id="detMsg" class="small mt-2"></div><button id="saveDet" class="btn-s mt-2" style="margin:0;padding:8px 18px">Save changes</button></div>
 
-<div class="cd mb-3"><div class="fw-bold mb-2"><i class="fas fa-key me-2"></i>Change password</div>
+<div class="cd mb-3" id="gCard" hidden><div class="fw-bold mb-2"><i class="fab fa-google me-2"></i>Google sign-in</div>
+<div id="gState" class="small mb-2"></div><div id="gBtn"></div><button id="gOff" class="btn btn-outline-danger btn-sm" hidden>Disconnect Google</button><div id="gMsg" class="small mt-2"></div></div>
+
+<div class="cd mb-3" id="pwCard"><div class="fw-bold mb-2"><i class="fas fa-key me-2"></i>Change password</div>
 <label class="lbl">Current password</label><input id="cp" type="password" class="fld" autocomplete="current-password">
 <label class="lbl">New password</label><input id="np" type="password" class="fld" autocomplete="new-password"><div id="npRules"></div>
 <label class="lbl">Repeat new password</label><input id="np2" type="password" class="fld" autocomplete="new-password">

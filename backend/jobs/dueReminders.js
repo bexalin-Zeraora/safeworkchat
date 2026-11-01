@@ -24,7 +24,7 @@ async function runOnce(io, now = new Date()) {
     const claim = await Task.updateOne({ _id: t._id, notifiedDueSoon: false }, { $set: { notifiedDueSoon: true } });
     if (claim.modifiedCount !== 1) continue;
     const left = inWords(t.dueDate - now);
-    await postSystemMessage(io, t.groupId, t.assignedTo._id, `⏰ Reminder: “${t.title}” assigned to ${t.assignedTo.username} is due in ${left} (${fmtDate(t.dueDate)}).`);
+    await postSystemMessage(io, t.groupId, t.assignedTo._id, `⏰ Reminder: “${t.title}” assigned to ${t.assignedTo.username} is due in ${left} (${fmtDate(t.dueDate)}).`, `/pages/tasks.html?id=${t._id}`);
     await notifyUser(io, { userId: t.assignedTo._id, type: 'task_due_soon', title: 'Task due soon', body: `“${t.title}” is due in ${left} (${fmtDate(t.dueDate)}).`, link: `/pages/tasks.html?id=${t._id}`, taskId: t._id, groupId: t.groupId });
     sent++;
   }
@@ -34,7 +34,7 @@ async function runOnce(io, now = new Date()) {
   for (const t of late) {
     const claim = await Task.updateOne({ _id: t._id, notifiedOverdue: false }, { $set: { notifiedOverdue: true, notifiedDueSoon: true } });
     if (claim.modifiedCount !== 1) continue;
-    await postSystemMessage(io, t.groupId, t.assignedTo._id, `⚠️ “${t.title}” assigned to ${t.assignedTo.username} is overdue (was due ${fmtDate(t.dueDate)}).`);
+    await postSystemMessage(io, t.groupId, t.assignedTo._id, `⚠️ “${t.title}” assigned to ${t.assignedTo.username} is overdue (was due ${fmtDate(t.dueDate)}).`, `/pages/tasks.html?id=${t._id}`);
     await notifyUser(io, { userId: t.assignedTo._id, type: 'task_overdue', title: 'Task overdue', body: `“${t.title}” was due ${fmtDate(t.dueDate)}.`, link: `/pages/tasks.html?id=${t._id}`, taskId: t._id, groupId: t.groupId });
     sent++;
   }

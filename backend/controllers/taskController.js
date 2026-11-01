@@ -85,7 +85,7 @@ const createTask = async (req, res) => {
     const io = req.app.get('io');
     const assignee = await require('../models/User').findById(assignedTo).select('username');
     await postSystemMessage(io, groupId, req.user._id,
-      `📌 ${req.user.username} assigned “${task.title}” to ${assignee.username} · ${task.priority} priority · due ${fmtDate(task.dueDate)}.`);
+      `📌 ${req.user.username} assigned “${task.title}” to ${assignee.username} · ${task.priority} priority · due ${fmtDate(task.dueDate)}.`, `/pages/tasks.html?id=${task._id}`);
     if (String(assignedTo) !== String(req.user._id)) {
       await notifyUser(io, { userId: assignedTo, type: 'task_assigned', title: 'New task assigned to you',
         body: `${req.user.username} assigned you “${task.title}” · due ${fmtDate(task.dueDate)}.`, link: `/pages/tasks.html?id=${task._id}`, taskId: task._id, groupId });
@@ -151,7 +151,7 @@ const updateTask = async (req, res) => {
 
     if (reassignedTo) {
       const newUser = await require('../models/User').findById(reassignedTo).select('username');
-      await postSystemMessage(io, task.groupId, req.user._id, `🔁 ${req.user.username} reassigned “${task.title}” from ${oldAssigneeName} to ${newUser.username} · due ${fmtDate(task.dueDate)}.`);
+      await postSystemMessage(io, task.groupId, req.user._id, `🔁 ${req.user.username} reassigned “${task.title}” from ${oldAssigneeName} to ${newUser.username} · due ${fmtDate(task.dueDate)}.`, `/pages/tasks.html?id=${task._id}`);
       if (String(reassignedTo) !== String(req.user._id)) {
         await notifyUser(io, { userId: reassignedTo, type: 'task_reassigned', title: 'A task was assigned to you',
           body: `${req.user.username} assigned you “${task.title}” · due ${fmtDate(task.dueDate)}.`, link: `/pages/tasks.html?id=${task._id}`, taskId: task._id, groupId: task.groupId });
@@ -239,7 +239,7 @@ const planPhases = async (req, res) => {
 
     const io = req.app.get('io');
     if (first) {
-      await postSystemMessage(io, task.groupId._id, req.user._id, `🗂️ ${req.user.username} planned ${total} phases for “${task.title}”.`);
+      await postSystemMessage(io, task.groupId._id, req.user._id, `🗂️ ${req.user.username} planned ${total} phases for “${task.title}”.`, `/pages/tasks.html?id=${task._id}`);
       if (task.createdBy && String(task.createdBy) !== String(req.user._id)) {
         await notifyUser(io, { userId: task.createdBy, type: 'task_plan', title: 'Phases planned',
           body: `${req.user.username} planned ${total} phases for “${task.title}”.`, link: `/pages/tasks.html?id=${task._id}`, taskId: task._id, groupId: task.groupId._id });
@@ -295,7 +295,7 @@ const addUpdate = async (req, res) => {
       if (creator) await notifyUser(io, { userId: creator, type: 'task_update', title: req.file ? 'Document uploaded' : 'Phase completed',
         body: `${req.user.username} completed phase ${number} of ${total}, “${stage.name}”, of “${task.title}”${req.file ? ` and uploaded “${req.file.originalname}”` : ''}.`, link: `/pages/tasks.html?id=${task._id}`, taskId: task._id, groupId: task.groupId._id });
       if (task.status === 'Completed' && oldStatus !== 'Completed') {
-        await postSystemMessage(io, task.groupId._id, req.user._id, `✅ ${req.user.username} completed “${task.title}”.`);
+        await postSystemMessage(io, task.groupId._id, req.user._id, `✅ ${req.user.username} completed “${task.title}”.`, `/pages/tasks.html?id=${task._id}`);
         if (creator) await notifyUser(io, { userId: creator, type: 'task_completed', title: 'Task completed',
           body: `${req.user.username} completed all ${total} phases of “${task.title}”.`, link: `/pages/tasks.html?id=${task._id}`, taskId: task._id, groupId: task.groupId._id });
       }

@@ -47,14 +47,18 @@ io.engine.on('connection_error', (err) => console.warn('Socket handshake failed:
 // Security headers, tuned so the app also works over plain http on a local network:
 //  - upgrade-insecure-requests / HSTS would force https, which a LAN host does not have
 //  - the pages use inline scripts/handlers, so those are allowed (all output is escaped separately)
+const isProd = process.env.NODE_ENV === 'production';
+if (process.env.TRUST_PROXY !== 'false') app.set('trust proxy', 1);   // behind the host's HTTPS proxy (Render, Railway, ...)
 app.use(helmet({
-  hsts: false,
+  hsts: isProd,                      // only force https when deployed (a LAN demo has no https)
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },   // the Google sign-in pop-up needs this
   contentSecurityPolicy: {
     useDefaults: true,
     directives: {
-      'script-src': ["'self'", "'unsafe-inline'"],
+      'script-src': ["'self'", "'unsafe-inline'", 'https://accounts.google.com'],
+      'frame-src': ["'self'", 'https://accounts.google.com'],
       'script-src-attr': ["'unsafe-inline'"],
-      'connect-src': ["'self'", 'ws:', 'wss:'],
+      'connect-src': ["'self'", 'ws:', 'wss:', 'https://accounts.google.com'],
       'img-src': ["'self'", 'data:', 'blob:'],
       'upgrade-insecure-requests': null
     }

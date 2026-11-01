@@ -239,7 +239,7 @@ const quillOps = (title, ...paras) => [{ insert: title }, { insert: '\n', attrib
         await TaskActivity.create(act); counts.activity++;
       }
       await Message.create({ groupId: group._id, senderId: users[creator]._id, type: 'system', encrypted: false, createdAt: assignedAt,
-        content: `📌 ${creator} assigned “${title}” to ${assignee} · ${priority} priority · due ${fmtDate(due)}.` }); counts.messages++;
+        link: `/pages/tasks.html?id=${t._id}`, content: `📌 ${creator} assigned “${title}” to ${assignee} · ${priority} priority · due ${fmtDate(due)}.` }); counts.messages++;
       if (working) { await TaskActivity.create({ taskId: t._id, userId: users[assignee]._id, action: 'stage_working', stage: stageNames[done], stageId: String(t.stages[done]._id), comment: 'Started this phase.', createdAt: new Date(now - 2 * H) }); counts.activity++; }
       if (creator !== assignee) {
         await Notification.create({ userId: users[assignee]._id, type: 'task_assigned', title: 'New task assigned to you', body: `${creator} assigned you “${title}” · due ${fmtDate(due)}.`,
@@ -247,7 +247,7 @@ const quillOps = (title, ...paras) => [{ insert: title }, { insert: '\n', attrib
       }
       if (complete) {
         const at = new Date(now - 6 * H);
-        await Message.create({ groupId: group._id, senderId: users[assignee]._id, type: 'system', encrypted: false, createdAt: at, content: `✅ ${assignee} completed “${title}”.` }); counts.messages++;
+        await Message.create({ groupId: group._id, senderId: users[assignee]._id, type: 'system', encrypted: false, createdAt: at, link: `/pages/tasks.html?id=${t._id}`, content: `✅ ${assignee} completed “${title}”.` }); counts.messages++;
         if (creator !== assignee) { await Notification.create({ userId: users[creator]._id, type: 'task_completed', title: 'Task completed', body: `${assignee} completed “${title}”.`, link: `/pages/tasks.html?id=${t._id}`, taskId: t._id, groupId: group._id, read: false, createdAt: at }); counts.notifications++; }
       }
     }

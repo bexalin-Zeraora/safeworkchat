@@ -122,6 +122,7 @@
   .bpanel .bi .ic.task_due_soon{background:#f5a524}.bpanel .bi .ic.task_overdue{background:#e5484d}.bpanel .bi .ic.task_completed{background:#3b82f6}
   .bpanel .bi b{display:block;font-size:.82rem}.bpanel .bi small{color:#7a8a94;font-size:.7rem}
   .bpanel .bi .dot{width:8px;height:8px;border-radius:50%;background:#10a463;margin-left:auto;flex:none;align-self:center}
+  body.modal-open .sstack{display:none}   /* never cover a pop-up window's buttons */
   .sstack{position:fixed;right:16px;bottom:16px;z-index:3100;display:flex;flex-direction:column;gap:8px;width:min(360px,calc(100vw - 24px))}
   @media(max-width:900px){.sstack{bottom:70px;right:12px}}
   .scard{background:#0b3b30;color:#fff;border-radius:12px;padding:9px 10px 9px 12px;box-shadow:0 10px 28px rgba(0,0,0,.3);font-size:.82rem;border-left:4px solid #3ddc97;display:flex;gap:10px;align-items:flex-start;cursor:pointer}

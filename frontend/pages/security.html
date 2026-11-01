@@ -27,12 +27,12 @@
 <a href="#" onclick="toggleTheme();return false"><i class="fas fa-moon"></i>Dark mode</a>
 <a href="#" onclick="logout();return false"><i class="fas fa-sign-out-alt"></i>Logout</a></div>
 <div class="cd sec"><div class="fw-bold mb-2"><i class="fas fa-shield-alt me-2"></i>Security &amp; Connection</div>
-<div class="row2"><div class="ic"><i class="fas fa-database"></i></div><div>MongoDB (local)<small id="dbSub">Checking…</small></div><span class="st2" id="dbSt">…</span></div>
+<div class="row2"><div class="ic"><i class="fas fa-database"></i></div><div>MongoDB database<small id="dbSub">Checking…</small></div><span class="st2" id="dbSt">…</span></div>
 <div class="row2"><div class="ic"><i class="fas fa-sync-alt"></i></div><div>Real-time connection<small id="rtSub">Server: <span id="host"></span></small></div><span class="st2" id="rtSt">…</span></div>
 <div class="row2"><div class="ic"><i class="fas fa-lock"></i></div><div>Chat encryption<small>End-to-end (X25519 + XSalsa20-Poly1305). The server stores only ciphertext.</small></div><span class="st2">On</span></div>
 <div class="row2"><div class="ic"><i class="fas fa-fingerprint"></i></div><div>Your key fingerprint<small id="fp">Not set up on this device</small></div><span class="st2" id="fpSt"></span></div>
 <div class="row2"><div class="ic"><i class="fas fa-info-circle"></i></div><div>Not end-to-end encrypted<small>Tasks, documents and uploaded proof files are stored locally and protected by login and group roles, not by E2E encryption.</small></div><span class="st2" style="color:var(--mut)">Info</span></div>
-<div class="row2"><div class="ic"><i class="fas fa-server"></i></div><div>Data location<small>Stored on this machine / your local network only. No cloud services.</small></div><span class="st2">Local</span></div>
+<div class="row2"><div class="ic"><i class="fas fa-server"></i></div><div>Data location<small>Stored in the MongoDB database this server uses (for example MongoDB Atlas). Chat messages are end-to-end encrypted, so the database only holds ciphertext.</small></div><span class="st2">MongoDB</span></div>
 <div class="row2"><div class="ic"><i class="fas fa-key"></i></div><div>Passwords<small>Hashed with bcrypt, never stored in plain text</small></div><span class="st2">On</span></div>
 <div class="row2"><div class="ic"><i class="fas fa-user-lock"></i></div><div>Sessions<small>Signed JWT tokens; every API call and socket is authenticated</small></div><span class="st2">On</span></div>
 <div class="row2"><div class="ic"><i class="fas fa-user-shield"></i></div><div>Access control<small>Per-group roles: Admin, Manager, Member</small></div><span class="st2">On</span></div>

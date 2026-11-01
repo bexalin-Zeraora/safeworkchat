@@ -83,6 +83,18 @@ Tip: use a different browser tab (or a private window) for each user. Each tab k
 | 28 | Dark mode | Click the moon icon | Dark theme on every page, remembered |
 | 29 | Mobile layout | Phone-size window | Bottom tab bar, chat list then chat |
 | 30 | Connection lost | Stop the server for 10 seconds | Red banner, turns green "Reconnected" afterwards |
+| 64 | "+" menu in a group chat | Bexalin: Chats, open a group, press the "+" next to the message box | Menu: Assign a task, New document, Share a document |
+| 65 | Assign a task from the chat | "+", Assign a task, pick a member, Assign task | A notice with an **Open** button appears in the chat; the member gets a notification and the task in their list |
+| 66 | New document from the chat | "+", New document, give a title and type | Notice "created the document ..." with Open; Open goes straight to the editor |
+| 67 | Share a document | "+", Share a document, pick one | Notice "shared the document ..." with Open; only this group's documents are listed |
+| 68 | Plain member | Kavya opens the "+" menu | Assign a task and New document are greyed out (tap shows why); Share still works |
+| 69 | One-to-one chat | Open a direct chat | No "+" button (tasks and documents belong to groups) |
+| 58 | Google button | Open the login page (with `GOOGLE_CLIENT_ID` set) | A "Continue with Google" button appears on both Login and Create account; with no client id it is hidden |
+| 59 | First Google sign-in | Continue with Google using an account that is not registered | Account created with your Google name; you are asked to create an encryption passphrase (same rules as passwords) |
+| 60 | Returning Google user | Log out, continue with Google again | Asks for the passphrase; a wrong one is refused; Cancel leaves you logged out |
+| 61 | Email already registered | Continue with Google using an email that has a password account | Refused: log in with your password, then connect Google from Profile (no automatic merge) |
+| 62 | Connect Google | Log in with a password, Profile, Connect Google | Shows "Google is connected"; next time Google sign-in opens the same account and asks for your password to open chats |
+| 63 | Google-only account | Profile of a Google-created account | No password form; Disconnect is disabled (it is the only way to log in) |
 | 52 | Password rules on register | Create account page, type `abc`, then `Abcdefg1!` | A live checklist shows 7 rules (8+ characters, lowercase, uppercase, number, special, not common, not your name); the strength bar goes Weak, then Good |
 | 53 | Weak password blocked | Submit `weakpass` | Refused with the rule that failed; no account is created |
 | 54 | Confirm password | Type different passwords in the two boxes | "Passwords do not match" and the form is not submitted |
