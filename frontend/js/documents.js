@@ -22,7 +22,7 @@ async function list() {
   const groups = await api('/api/groups/my-groups');
   const manageable = groups.filter((g) => !g.isDirect && (g.myRole === 'Admin' || g.myRole === 'Manager'));
   view.innerHTML = `<div class="cd" style="padding:0"><div class="d-flex align-items-center p-3"><b><i class="far fa-folder-open me-2"></i>Documents</b>
-    ${manageable.length ? '<button id="nb" class="btn-s ms-auto"><i class="fas fa-plus"></i> New</button>' : ''}</div>
+    ${manageable.length ? '<div class="ms-auto d-flex gap-2"><button id="ib" class="btn btn-outline-success btn-sm"><i class="fas fa-upload"></i> Upload existing</button><button id="nb" class="btn-s" style="margin:0"><i class="fas fa-plus"></i> New</button></div>' : ''}</div>
     <div class="px-3"><input id="sq" class="fld" placeholder="Search documents..."></div>
     <div class="tabs mt-2" id="dt"><button data-s="all" class="on">All</button><button data-s="shared">Shared</button><button data-s="mine">My Files</button></div>
     <div class="px-3 pb-3" id="dlist"></div></div>`;
@@ -39,6 +39,25 @@ async function list() {
   if ($('nb')) $('nb').onclick = () => {
     $('ng').innerHTML = manageable.map((g) => `<option value="${esc(g._id)}">${esc(g.name)}</option>`).join('');
     $('nerr').textContent = ''; bootstrap.Modal.getOrCreateInstance($('newDoc')).show();
+  };
+  if ($('ib')) $('ib').onclick = () => {
+    $('ig').innerHTML = manageable.map((g) => `<option value="${esc(g._id)}">${esc(g.name)}</option>`).join('');
+    $('ierr').textContent = ''; $('ifile').value = ''; bootstrap.Modal.getOrCreateInstance($('importDoc')).show();
+  };
+  if ($('ic')) $('ic').onclick = async () => {
+    const file = $('ifile').files[0]; $('ierr').textContent = '';
+    if (!file) { $('ierr').textContent = 'Choose a TXT, Markdown or DOCX file.'; return; }
+    if (file.size > 1024 * 1024) { $('ierr').textContent = 'Maximum file size is 1 MB.'; return; }
+    try {
+      let content = '', type = file.name.toLowerCase().endsWith('.docx') ? 'docx' : file.name.toLowerCase().endsWith('.md') ? 'md' : 'txt';
+      if (type === 'docx') {
+        if (!window.mammoth) throw new Error('DOCX reader is unavailable. Refresh the page and try again.');
+        const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() }); content = result.value;
+      } else content = await file.text();
+      if (!content.trim()) throw new Error('This file has no readable text to import.');
+      const d = await api('/api/documents/import', 'POST', { groupId: $('ig').value, title: file.name, type, content });
+      location.href = `?id=${d._id}&edit=1`;
+    } catch (e) { $('ierr').textContent = e.message; }
   };
   $('nc').onclick = async () => {
     try {

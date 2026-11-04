@@ -5,6 +5,7 @@ const { protect } = require('../middleware/authMiddleware');
 
 router.get('/', protect, c.list);
 router.post('/', protect, c.create);
+router.post('/import', protect, c.importExisting);
 router.get('/:id', protect, c.get);
 router.put('/:id', protect, c.save);
 router.post('/:id/share', protect, c.share);

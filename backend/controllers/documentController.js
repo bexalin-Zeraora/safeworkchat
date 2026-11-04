@@ -63,6 +63,23 @@ function toMarkdown(ops) {
   return out.join('\n');
 }
 
+
+// POST /api/documents/import { groupId, title, type, content } - import an existing TXT/MD/DOCX file into the editable document workspace.
+exports.importExisting = async (req, res) => {
+  try {
+    const { groupId, title, type, content } = req.body || {};
+    if (!/^[a-f0-9]{24}$/i.test(String(groupId || '')) || typeof title !== 'string' || !title.trim() || typeof content !== 'string' || !content.trim()) return res.status(400).json({ message: 'Group, filename and readable document content are required' });
+    if (!['txt', 'md', 'docx'].includes(type)) return res.status(400).json({ message: 'Only TXT, Markdown and DOCX can be imported into the text editor' });
+    if (Buffer.byteLength(content, 'utf8') > MAX_OPS_BYTES - 1024) return res.status(413).json({ message: 'Document is too large (maximum 800 KB of extracted text)' });
+    if (!manage(await member(groupId, req.user._id))) return res.status(403).json({ message: 'Only group Admins or Managers can import editable documents' });
+    const ops = [{ insert: content.endsWith('\n') ? content : content + '\n' }];
+    const doc = await Doc.create({ groupId, title: title.trim().replace(/\.(txt|md|docx)$/i, '').slice(0, 120), type, createdBy: req.user._id, updatedBy: req.user._id, ops });
+    await DocumentVersion.create({ documentId: doc._id, version: 1, ops, savedBy: req.user._id, note: 'Imported existing file' });
+    await postSystemMessage(req.app.get('io'), groupId, req.user._id, `📄 ${req.user.username} imported “${doc.title}.${doc.type}” into group documents.`, `/pages/documents.html?id=${doc._id}&edit=1`);
+    res.status(201).json(doc);
+  } catch (e) { err(res, e); }
+};
+
 // GET /api/documents?scope=all|shared|mine&q=
 exports.list = async (req, res) => {
   try {

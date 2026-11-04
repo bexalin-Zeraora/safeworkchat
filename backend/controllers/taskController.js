@@ -2,7 +2,7 @@ const Task = require('../models/Task');
 const TaskActivity = require('../models/TaskActivity');
 const GroupMember = require('../models/GroupMember');
 const path = require('path');
-const { notifyUser, postSystemMessage, fmtDate } = require('../utils_notify');
+const { notifyUser, postSystemMessage, fmtDate, sendEmail } = require('../utils_notify');
 const { DEFAULT_STAGES } = Task;
 
 const STATUSES = ['To Do', 'In Progress', 'Completed'];
@@ -83,13 +83,14 @@ const createTask = async (req, res) => {
     await TaskActivity.create({ taskId: task._id, userId: req.user._id, action: 'created', to: task.status });
 
     const io = req.app.get('io');
-    const assignee = await require('../models/User').findById(assignedTo).select('username');
+    const assignee = await require('../models/User').findById(assignedTo).select('username email');
     await postSystemMessage(io, groupId, req.user._id,
       `📌 ${req.user.username} assigned “${task.title}” to ${assignee.username} · ${task.priority} priority · due ${fmtDate(task.dueDate)}.`, `/pages/tasks.html?id=${task._id}`);
     if (String(assignedTo) !== String(req.user._id)) {
       await notifyUser(io, { userId: assignedTo, type: 'task_assigned', title: 'New task assigned to you',
         body: `${req.user.username} assigned you “${task.title}” · due ${fmtDate(task.dueDate)}.`, link: `/pages/tasks.html?id=${task._id}`, taskId: task._id, groupId });
     }
+    if (assignee?.email) sendEmail({ to: assignee.email, subject: `New SafeWorkChat task: ${task.title}`, text: `Hello ${assignee.username},\n\n${req.user.username} assigned you a task in SafeWorkChat.\n\nTask: ${task.title}\nDescription: ${description || 'Not provided'}\nPriority: ${task.priority}\nDeadline: ${fmtDate(task.dueDate)}\n\nPlease sign in to SafeWorkChat to view and update the task.` }).catch(e => console.error('Task assignment email failed:', e.message));
     if (io) io.to(String(groupId)).emit('taskUpdated', { taskId: task._id });
 
     res.status(201).json(task);
@@ -150,12 +151,13 @@ const updateTask = async (req, res) => {
     if (log.length) await TaskActivity.insertMany(log.map((l) => ({ ...l, taskId: task._id, userId: req.user._id })));
 
     if (reassignedTo) {
-      const newUser = await require('../models/User').findById(reassignedTo).select('username');
+      const newUser = await require('../models/User').findById(reassignedTo).select('username email');
       await postSystemMessage(io, task.groupId, req.user._id, `🔁 ${req.user.username} reassigned “${task.title}” from ${oldAssigneeName} to ${newUser.username} · due ${fmtDate(task.dueDate)}.`, `/pages/tasks.html?id=${task._id}`);
       if (String(reassignedTo) !== String(req.user._id)) {
         await notifyUser(io, { userId: reassignedTo, type: 'task_reassigned', title: 'A task was assigned to you',
           body: `${req.user.username} assigned you “${task.title}” · due ${fmtDate(task.dueDate)}.`, link: `/pages/tasks.html?id=${task._id}`, taskId: task._id, groupId: task.groupId });
       }
+      if (newUser?.email) sendEmail({ to: newUser.email, subject: `SafeWorkChat task assigned: ${task.title}`, text: `Hello ${newUser.username},\n\n${req.user.username} assigned you a task in SafeWorkChat.\n\nTask: ${task.title}\nDeadline: ${fmtDate(task.dueDate)}\n\nPlease sign in to view the task.` }).catch(e => console.error('Task reassignment email failed:', e.message));
     }
     if (io) io.to(String(task.groupId)).emit('taskUpdated', { taskId: task._id });
     res.json(task);

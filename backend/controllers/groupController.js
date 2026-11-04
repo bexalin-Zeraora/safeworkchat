@@ -125,23 +125,25 @@ const addMember = async (req, res) => {
   try {
     const groupId = req.params.id;
     const isId = (v) => typeof v === 'string' && /^[a-f0-9]{24}$/i.test(v);
-    if (!isId(groupId) || !isId(req.body.userId)) return res.status(400).json({ message: 'Invalid request' });
+    const userIds = [...new Set((Array.isArray(req.body.userIds) ? req.body.userIds : [req.body.userId]).filter(isId))];
+    if (!isId(groupId) || !userIds.length || userIds.length > 50) return res.status(400).json({ message: 'Select between 1 and 50 valid users' });
 
     const me = await GroupMember.findOne({ groupId, userId: req.user._id });
     if (!me || me.role !== 'Admin') return res.status(403).json({ message: 'Only group Admins can add members' });
-    if (!(await areFriends(req.user._id, [req.body.userId]))) return res.status(403).json({ message: 'You can only add people who are your friends' });
-    if (await GroupMember.findOne({ groupId, userId: req.body.userId })) return res.status(409).json({ message: 'Already a member' });
-    const newUser = await User.findById(req.body.userId).select('publicKey');
-    if (!newUser || !newUser.publicKey) return res.status(400).json({ message: 'That person has not set up encryption yet (they must log in once)' });
-
+    if (!(await areFriends(req.user._id, userIds))) return res.status(403).json({ message: 'You can only add people who are your friends' });
     const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ message: 'Group not found' });
     if (group.isDirect) return res.status(400).json({ message: 'You cannot add people to a one-to-one chat' });
+
+    const current = await GroupMember.find({ groupId });
+    const currentIds = new Set(current.map(m => String(m.userId)));
+    if (userIds.some(id => currentIds.has(id))) return res.status(409).json({ message: 'One or more selected users are already members' });
+    const newcomers = await User.find({ _id: { $in: userIds } }).select('_id publicKey');
+    if (newcomers.length !== userIds.length || newcomers.some(u => !u.publicKey)) return res.status(400).json({ message: 'Every selected person must log in once to set up encryption' });
+
     const newVersion = group.keyVersion + 1;
     if (Number(req.body.keyVersion) !== newVersion) return res.status(409).json({ message: 'Group changed, please try again' });
-
-    // the new key must be wrapped for every current member plus the newcomer, nobody else
-    const current = await GroupMember.find({ groupId });
-    const need = new Set([...current.map((m) => String(m.userId)), String(req.body.userId)]);
+    const need = new Set([...current.map(m => String(m.userId)), ...userIds]);
     const wrapped = new Map();
     for (const k of (Array.isArray(req.body.keys) ? req.body.keys : []).slice(0, 300)) {
       const key = cleanWrappedKey(k && k.key);
@@ -152,15 +154,18 @@ const addMember = async (req, res) => {
     const claim = await Group.updateOne({ _id: groupId, keyVersion: group.keyVersion }, { $set: { keyVersion: newVersion } });
     if (claim.modifiedCount !== 1) return res.status(409).json({ message: 'Group changed, please try again' });
 
-    await GroupMember.create({ groupId, userId: req.body.userId, role: ROLES.includes(req.body.role) ? req.body.role : 'Member',
-      keys: [{ version: newVersion, ...wrapped.get(req.body.userId) }], joinedAt: new Date() });
-    await GroupMember.bulkWrite(current.map((m) => ({
+    const role = ROLES.includes(req.body.role) ? req.body.role : 'Member';
+    await GroupMember.insertMany(newcomers.map(u => ({ groupId, userId: u._id, role, keys: [{ version: newVersion, ...wrapped.get(String(u._id)) }], joinedAt: new Date() })));
+    await GroupMember.bulkWrite(current.map(m => ({
       updateOne: { filter: { _id: m._id }, update: { $push: { keys: { version: newVersion, ...wrapped.get(String(m.userId)) } } } }
     })));
 
     const io = req.app.get('io');
-    if (io) { io.to(String(groupId)).emit('groupKeyChanged', { groupId }); io.to('user:' + req.body.userId).emit('groupsChanged'); }
-    res.status(201).json({ keyVersion: newVersion });
+    if (io) {
+      io.to(String(groupId)).emit('groupKeyChanged', { groupId });
+      userIds.forEach(id => io.to('user:' + id).emit('groupsChanged'));
+    }
+    res.status(201).json({ keyVersion: newVersion, added: userIds.length });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }

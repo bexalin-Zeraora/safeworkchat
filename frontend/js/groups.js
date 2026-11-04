@@ -55,9 +55,31 @@ $('go').onclick = async () => {
   } catch (e) { $('err').textContent = e.message; $('go').disabled = false; }
 };
 
+let myGroups = [];
+async function loadGroupFiles() {
+  const groupId = $('fileGroup').value;
+  if (!groupId) { $('groupFiles').textContent = 'Select a group to view shared files.'; return; }
+  try {
+    const files = await fetch(`/api/groups/${groupId}/files`, { headers: { Authorization: 'Bearer ' + token } }).then(async r => { const d = await r.json().catch(() => []); if (!r.ok) throw new Error(d.message || 'Could not load files'); return d; });
+    $('groupFiles').innerHTML = files.length ? files.map(f => `<div class="d-flex align-items-center justify-content-between border-bottom py-2 gap-2"><span><i class="fas fa-file me-2"></i>${esc(f.originalName)}<small class="d-block text-muted">${esc(f.uploadedBy)} · ${new Date(f.createdAt).toLocaleString()}</small></span><a href="#" data-dl="${esc(f._id)}">Download</a></div>`).join('') : 'No files uploaded to this group yet.';
+    $('groupFiles').querySelectorAll('[data-dl]').forEach(a => a.onclick = async e => { e.preventDefault(); const r = await fetch(`/api/groups/${groupId}/files/${a.dataset.dl}/download`, { headers: { Authorization: 'Bearer ' + token } }); if (!r.ok) { $('fileMsg').textContent = 'Download failed'; return; } const blob = await r.blob(), url = URL.createObjectURL(blob), link = document.createElement('a'); link.href = url; link.download = files.find(f => f._id === a.dataset.dl)?.originalName || 'download'; link.click(); URL.revokeObjectURL(url); });
+  } catch (e) { $('groupFiles').textContent = e.message; }
+}
+$('fileGroup').onchange = loadGroupFiles;
+$('uploadGroupFile').onclick = async () => {
+  $('fileMsg').textContent = '';
+  const groupId = $('fileGroup').value, file = $('groupFile').files[0];
+  if (!groupId || !file) { $('fileMsg').textContent = 'Choose a group and a file first.'; return; }
+  if (file.size > 10 * 1024 * 1024) { $('fileMsg').textContent = 'Maximum file size is 10 MB.'; return; }
+  const form = new FormData(); form.append('file', file);
+  try { $('uploadGroupFile').disabled = true; const r = await fetch(`/api/groups/${groupId}/files`, { method: 'POST', headers: { Authorization: 'Bearer ' + token }, body: form }); const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.message || 'Upload failed'); $('fileMsg').textContent = 'File uploaded successfully.'; $('groupFile').value = ''; await loadGroupFiles(); }
+  catch (e) { $('fileMsg').textContent = e.message; } finally { $('uploadGroupFile').disabled = false; }
+};
+
 (async () => {
   try {
-    const g = (await api('/my-groups')).filter((x) => !x.isDirect);
-    $('mine').innerHTML = g.length ? g.map((x) => `<div class="d-flex justify-content-between py-1 border-bottom"><span class="text-dark">${avImg(x.name, 26, 'group')} ${esc(x.name)}</span><span class="tag Low">${esc(x.myRole)}</span></div>`).join('') : 'You are not in any group yet.';
+    myGroups = (await api('/my-groups')).filter((x) => !x.isDirect);
+    $('mine').innerHTML = myGroups.length ? myGroups.map((x) => `<div class="d-flex justify-content-between py-1 border-bottom"><span class="text-dark">${avImg(x.name, 26, 'group')} ${esc(x.name)}</span><span class="tag Low">${esc(x.myRole)}</span></div>`).join('') : 'You are not in any group yet.';
+    $('fileGroup').innerHTML = '<option value="">Select a group</option>' + myGroups.map(g => `<option value="${esc(g._id)}">${esc(g.name)}</option>`).join('');
   } catch (e) { $('mine').textContent = e.message; }
 })();

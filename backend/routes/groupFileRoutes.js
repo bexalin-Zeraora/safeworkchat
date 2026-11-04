@@ -1,0 +1,10 @@
+const express = require('express');
+const router = express.Router({ mergeParams: true });
+const { protect } = require('../middleware/authMiddleware');
+const c = require('../controllers/groupFileController');
+router.use(protect);
+router.get('/', c.list);
+router.post('/', c.upload);
+router.get('/:fileId/download', c.download);
+router.delete('/:fileId', c.remove);
+module.exports = router;

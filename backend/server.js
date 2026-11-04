@@ -20,6 +20,7 @@ const GroupMember = require('./models/GroupMember');
 const jwt = require('jsonwebtoken');
 const { isCipher } = require('./utils_crypto');
 const Group = require('./models/Group');
+const User = require('./models/User');
 const friendRoutes = require('./routes/friendRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -132,6 +133,7 @@ const isId = (v) => typeof v === 'string' && /^[a-f0-9]{24}$/i.test(v);
 
 io.on('connection', (socket) => {
   console.log(`A user connected: ${socket.id}`);
+  User.updateOne({ _id: socket.userId }, { $set: { lastActiveAt: new Date(), inactivityEmailSentAt: null } }).catch(() => {});
   socket.join('user:' + socket.userId); // private room for personal notifications
 
   socket.on('joinRoom', async (groupId) => {

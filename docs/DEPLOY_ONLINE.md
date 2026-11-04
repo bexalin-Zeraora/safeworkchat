@@ -52,3 +52,22 @@ Use a Node host that supports WebSockets (Render, Railway, Fly.io, a VPS, ...). 
 | Google pop-up closes with no sign-in | the browser blocked the pop-up, allow pop-ups for the site |
 | Server exits at start: "MongoDB Connection Error" | wrong password in `MONGODB_URI`, or Atlas **Network Access** does not allow the server's IP |
 | "Missing JWT_SECRET, MONGODB_URI" | environment variables are not set on the host |
+
+
+## Email notifications (Gmail SMTP)
+
+Add these environment variables to the backend service (Render):
+
+- `SMTP_HOST=smtp.gmail.com`
+- `SMTP_PORT=465`
+- `SMTP_USER=your Gmail address`
+- `SMTP_APP_PASSWORD=your 16-character Google App Password`
+- `INACTIVE_EMAIL_DAYS=7` (optional; defaults to 7)
+
+Use a Google App Password, not your normal Gmail password. Google App Passwords require 2-Step Verification on the Google account. Keep the app password private and never commit it to GitHub. If SMTP variables are not configured, in-app notifications continue working but email delivery is skipped.
+
+The application sends emails for task assignment/reassignment, due-soon and overdue reminders, and inactivity reminders. Inactivity reminders are checked every six hours and are rate-limited to at most one per user per seven days. User activity is updated by authenticated API requests and Socket.IO connections.
+
+## Group files and imported documents
+
+Group files are stored in `backend/uploads`. This works for local demonstrations, but Render's normal filesystem is ephemeral; use a persistent disk or object storage before relying on uploaded files in production. Group files are limited to 10 MB and access is checked against group membership. Existing TXT, Markdown and DOCX files can be imported into the editable document workspace; DOCX formatting is converted to editable text, while the original file's complex layout may not be preserved.

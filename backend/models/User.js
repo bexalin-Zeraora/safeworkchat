@@ -14,7 +14,9 @@ const userSchema = new mongoose.Schema({
   friendCode: { type: String, unique: true, sparse: true },
   publicKey: { type: String, default: '' },
   keyBackup: { salt: String, nonce: String, cipher: String },
-  globalRole: { type: String, enum: ['User', 'SuperAdmin'], default: 'User' } 
+  globalRole: { type: String, enum: ['User', 'SuperAdmin'], default: 'User' },
+  lastActiveAt: { type: Date, default: Date.now },
+  inactivityEmailSentAt: { type: Date, default: null }
 }, { timestamps: true });
 
 // FIX: Removed 'next' parameter. Modern Mongoose handles async hooks automatically.

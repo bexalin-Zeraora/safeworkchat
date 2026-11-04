@@ -27,5 +27,9 @@
 <div id="err" class="text-danger small mt-2"></div>
 <div class="d-flex justify-content-end gap-2 mt-3"><a href="/pages/dashboard.html" class="btn btn-outline-secondary btn-sm px-4">Cancel</a><button id="go" class="btn-s px-4 py-2" style="margin:0">Create Group</button></div></div>
 <div class="cd"><div class="fw-bold mb-2">My Groups</div><div id="mine" class="small text-muted">Loading…</div></div>
+<div class="cd mt-3"><div class="fw-bold mb-2"><i class="fas fa-folder-open me-2"></i>Group Files & Media</div>
+<label class="lbl">Choose group</label><select id="fileGroup" class="fld"><option value="">Select a group</option></select>
+<div class="d-flex gap-2 mt-2"><input id="groupFile" type="file" class="fld" style="padding:7px" accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.txt,.md,.docx,.doc,.xlsx,.pptx,.zip,.json,.js,.py,.sql,.log,.csv,.mp4,.mp3"><button id="uploadGroupFile" class="btn-s" style="margin:0;white-space:nowrap">Upload</button></div>
+<div id="fileMsg" class="small mt-2"></div><div id="groupFiles" class="small mt-2 text-muted">Select a group to view shared files.</div></div>
 </div></div></div>
 <script src="/vendor/bootstrap.bundle.min.js"></script><script src="/vendor/nacl-fast.min.js"></script><script src="/js/e2ee.js"></script><script src="/js/groups.js"></script><script src="/js/nav.js"></script></body></html>

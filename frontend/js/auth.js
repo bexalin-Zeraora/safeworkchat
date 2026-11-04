@@ -198,12 +198,12 @@ function askSecret({ mode, hasPassword, backup, token, username, email }) {
     const $ = (id) => document.getElementById(id);
     const modal = $('secretModal'), err = $('smErr'), pass = $('smPass'), pass2 = $('smPass2');
     const create = mode === 'create';
-    $('smTitle').textContent = create ? 'Create your encryption passphrase' : (hasPassword ? 'Enter your account password' : 'Enter your encryption passphrase');
+    $('smTitle').textContent = create ? 'Create your encryption passphrase' : 'Unlock your chat encryption';
     $('smText').textContent = create
       ? 'Google confirms who you are. This passphrase protects the key that encrypts your chats, so even the server cannot read your messages. You will type it every time you sign in. If you forget it, old messages cannot be recovered.'
-      : (hasPassword ? 'Your chats are locked with your account password. Enter it to open them.' : 'Enter the encryption passphrase you created to open your chats.');
+      : 'Google has already signed you in. This is not another login step: enter the passphrase that protects your end-to-end encrypted chat key. For an account originally registered with email and password, this is the same password you used when setting up chat encryption.';
     $('smCreate').hidden = !create; pass.value = ''; pass2.value = ''; err.textContent = '';
-    pass.placeholder = create ? 'Choose a passphrase' : (hasPassword ? 'Account password' : 'Encryption passphrase');
+    pass.placeholder = create ? 'Choose a passphrase' : 'Chat encryption passphrase';
     pass.autocomplete = create ? 'new-password' : 'current-password';
     let render = null;
     if (create) render = PasswordRules.attach(pass, $('smRules'), () => ({ username, email }), pass2);

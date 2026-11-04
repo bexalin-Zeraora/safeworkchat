@@ -6,7 +6,7 @@ const { v4: uuid } = require('uuid');
 const dir = path.join(__dirname, '..', 'uploads');
 fs.mkdirSync(dir, { recursive: true });
 
-const ALLOWED = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.pdf', '.txt', '.md', '.docx', '.doc', '.xlsx', '.pptx', '.zip', '.json', '.js', '.py', '.sql', '.log']);
+const ALLOWED = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.pdf', '.txt', '.md', '.docx', '.doc', '.xlsx', '.pptx', '.zip', '.json', '.js', '.py', '.sql', '.log', '.csv', '.mp4', '.mp3']);
 
 module.exports = multer({
   storage: multer.diskStorage({
