@@ -18,7 +18,8 @@
 
   // Back/forward button: never show an app page from the browser's page cache after logout
   window.addEventListener('pageshow', (e) => {
-    const onLogin = /\/login\.html$/.test(location.pathname);
-    if (!onLogin && !sess.get('token')) location.replace('/pages/login.html');
-  });
-})();
+const isPublicPage = /\/(login|reset-password)\.html$/.test(location.pathname);
+
+if (!isPublicPage && !sess.get('token')) {
+    location.replace('/pages/login.html');
+}
