@@ -1,4 +1,4 @@
-// E-mail: Nodemailer over (Gmail) SMTP, templates, and "send each e-mail only once" bookkeeping.
+// E-mail delivery via Resend HTTP API (preferred) or SMTP fallback.
 // Credentials come only from environment variables and never reach the browser.
 const nodemailer = require('nodemailer');
 const NotificationLog = require('./models/NotificationLog');
@@ -9,7 +9,9 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const appUrl = () => (process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`).replace(/\/+$/, '');
 const maxAttempts = () => Number(process.env.EMAIL_MAX_ATTEMPTS) || 3;
 
-const enabled = () => process.env.EMAIL_NOTIFICATIONS !== 'false' && !!(process.env.SMTP_USER && process.env.SMTP_PASS);
+const hasResend = () => !!process.env.RESEND_API_KEY;
+const hasSmtp = () => !!(process.env.SMTP_USER && process.env.SMTP_PASS);
+const enabled = () => process.env.EMAIL_NOTIFICATIONS !== 'false' && (hasResend() || hasSmtp());
 
 let transport = null;
 function getTransport() {
@@ -26,6 +28,18 @@ function getTransport() {
 const setTransport = (t) => { transport = t; };   // tests
 
 async function sendMail({ to, subject, text, html }) {
+  // Resend uses HTTPS, so no SMTP port or outbound SMTP access is needed on Render.
+  if (hasResend()) {
+    if (!process.env.MAIL_FROM) throw new Error('MAIL_FROM must be set to a sender address verified in Resend.');
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: process.env.MAIL_FROM, to: [to], subject, text, html })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.message || result.name || `Resend API returned HTTP ${response.status}`);
+    return result;
+  }
   const from = process.env.MAIL_FROM || process.env.SMTP_USER;
   return getTransport().sendMail({ from, to, subject, text, html });
 }

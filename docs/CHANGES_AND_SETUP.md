@@ -4,7 +4,7 @@
 
 | Area | Summary |
 |---|---|
-| E-mail notifications | Nodemailer + Gmail SMTP. E-mails for: task assigned, deadline approaching, task overdue, inactive user, password reset. Scheduler = `node-cron`. Every e-mail has a unique key in the `notificationlogs` collection, so nothing is sent twice. Failed sends are retried (default max 3, ≥10 min apart). |
+| E-mail notifications | Resend HTTPS API (recommended) or Nodemailer SMTP fallback. E-mails for: task assigned, deadline approaching, task overdue, inactive user, password reset. Scheduler = `node-cron`. Every e-mail has a unique key in the `notificationlogs` collection, so nothing is sent twice. Failed sends are retried (default max 3, ≥10 min apart). |
 | Group creation | Search friends by **name or e-mail**, tick several people (the list stays open), chips with ✕, "select all shown", per-person role, duplicates impossible, members shown on the Groups page. Backend creates group + all members in one step and removes the group if anything fails. |
 | Authentication | Email/password register + login (bcrypt, JWT) unchanged. **New:** forgot / reset password by e-mailed one-time token (SHA-256 hashed in DB, 60 min, single use). **Google sign-in no longer asks for a passphrase/password** (see §6 for how encryption keys are handled). |
 | Group files | New **Files** page (sidebar + folder button in the chat header). Upload, list, search, filter by type, sort, preview (images, PDF, text), download, delete. Stored outside the web root, served only through authenticated routes. |
@@ -30,7 +30,7 @@ New: `nodemailer`, `node-cron`, `mammoth` (reads .docx on the server). Run `npm 
 |---|---|
 | `SMTP_USER`, `SMTP_PASS` | Gmail address and a Gmail **App Password** (Google account → Security → 2-Step Verification → App passwords). Server-side only. |
 | `SMTP_HOST/PORT/SECURE`, `MAIL_FROM` | Default `smtp.gmail.com`, `465`, `true`. |
-| `EMAIL_NOTIFICATIONS` | `false` switches all e-mail off. E-mail is also off automatically when `SMTP_USER/PASS` are empty. |
+| `EMAIL_NOTIFICATIONS` | `false` switches all e-mail off. E-mail is also off automatically when both Resend and SMTP credentials are empty. |
 | `APP_URL` | Public address, used for links in e-mails (e.g. `https://your-app.onrender.com`). |
 | `DUE_SOON_HOURS` (24), `OVERDUE_EMAIL_DAYS` (7) | "Deadline approaching" window; stop e-mailing about tasks overdue longer than this. |
 | `INACTIVITY_DAYS` (7), `INACTIVITY_CHECK_CRON` (`0 * * * *`), `EMAIL_TASK_CRON` (`* * * * *`) | Inactivity threshold and schedules. |
@@ -78,11 +78,19 @@ npm start                   # http://localhost:5000
 8. **Task document permission**: on a task, Documents tab → New document as the assignee. Log in as the group Admin: can open, no Edit / Replace / Restore; API `PUT` returns 403. A plain member: 403 on open.
 9. **Regression**: chat (encrypted), task assignment + phases, notifications, calendar.
 
+## Resend email setup (no SMTP)
+1. Create a Resend account at https://resend.com and generate an API key at https://resend.com/api-keys.
+2. Add a sending domain in Resend and publish the DNS records Resend provides (SPF/DKIM). Wait until the domain is verified.
+3. In Render → your Web Service → Environment, add `RESEND_API_KEY` (the API key) and `MAIL_FROM` (for example `Safe WorkChat <notifications@your-domain.com>` using the verified domain). Keep `EMAIL_NOTIFICATIONS=true`.
+4. Set `APP_URL` to your exact Render HTTPS URL. Redeploy/restart the service.
+5. Test from the backend shell with `npm run test:email -- your-real-address@example.com`. The app uses Resend over HTTPS; no SMTP host, port, Gmail password, or app password is needed.
+6. Keep the API key private: never put it in frontend JavaScript or commit it to Git.
+
 ## 8. Deploying on Render
 
 1. Push the repo; create a **Web Service**, root directory `backend`, build `npm install`, start `npm start`.
 2. Add a **Persistent Disk** (e.g. mount `/var/data`) and set `UPLOAD_DIR=/var/data/uploads` – otherwise uploaded files disappear on every deploy.
-3. Environment: everything in the table above. `NODE_ENV=production`, `APP_URL=https://<service>.onrender.com`, `MONGODB_URI` (Atlas, allow Render's IPs / 0.0.0.0/0), long random `JWT_SECRET`, `SESSION_SECRET`, `KEY_WRAP_SECRET`, `SMTP_USER`, `SMTP_PASS`.
+3. Environment: everything in the table above. `NODE_ENV=production`, `APP_URL=https://<service>.onrender.com`, `MONGODB_URI` (Atlas, allow Render's IPs / 0.0.0.0/0), long random `JWT_SECRET`, `SESSION_SECRET`, `KEY_WRAP_SECRET`, `RESEND_API_KEY`, `MAIL_FROM`.
 4. Google: add the Render URL under *Authorised JavaScript origins*.
 5. Free Render instances sleep when idle: scheduled e-mails only run while the service is awake. Use a paid instance (or an external pinger) for dependable reminders. Several instances are safe: e-mail keys are unique in the database.
 

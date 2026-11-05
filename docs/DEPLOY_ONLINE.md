@@ -52,3 +52,12 @@ Use a Node host that supports WebSockets (Render, Railway, Fly.io, a VPS, ...). 
 | Google pop-up closes with no sign-in | the browser blocked the pop-up, allow pop-ups for the site |
 | Server exits at start: "MongoDB Connection Error" | wrong password in `MONGODB_URI`, or Atlas **Network Access** does not allow the server's IP |
 | "Missing JWT_SECRET, MONGODB_URI" | environment variables are not set on the host |
+
+## 7. E-mail on Render without SMTP (recommended)
+This project supports Resend's HTTPS API. Create a Resend account, add and verify your sending domain by publishing its DNS records, and create an API key. In Render → Web Service → Environment, set:
+- `RESEND_API_KEY` = your Resend API key
+- `MAIL_FROM` = `Safe WorkChat <notifications@your-verified-domain.com>`
+- `EMAIL_NOTIFICATIONS` = `true`
+- `APP_URL` = your deployed `https://...onrender.com` URL
+
+Save changes and redeploy. No SMTP credentials or ports are needed. Test with `npm run test:email -- your-real-address@example.com` from the backend shell. Resend may restrict unverified accounts to sending only to the account owner's address; verify a domain before sending to arbitrary users. Never expose the API key in frontend code or commit it to Git.
