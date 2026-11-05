@@ -10,8 +10,16 @@ const appUrl = () => (process.env.APP_URL || `http://localhost:${process.env.POR
 const maxAttempts = () => Number(process.env.EMAIL_MAX_ATTEMPTS) || 3;
 
 const hasResend = () => !!process.env.RESEND_API_KEY;
+const hasBrevo = () => !!process.env.BREVO_API_KEY;
 const hasSmtp = () => !!(process.env.SMTP_USER && process.env.SMTP_PASS);
-const enabled = () => process.env.EMAIL_NOTIFICATIONS !== 'false' && (hasResend() || hasSmtp());
+const enabled = () => process.env.EMAIL_NOTIFICATIONS !== 'false' && (hasBrevo() || hasResend() || hasSmtp());
+
+function parseSender(value) {
+  const raw = String(value || '').trim();
+  const match = raw.match(/^(.*?)\s*<([^<>\s]+@[^<>\s]+)>$/);
+  if (match) return { name: match[1].replace(/^['"]|['"]$/g, '').trim() || 'Safe WorkChat', email: match[2] };
+  return { name: 'Safe WorkChat', email: raw };
+}
 
 let transport = null;
 function getTransport() {
@@ -28,6 +36,20 @@ function getTransport() {
 const setTransport = (t) => { transport = t; };   // tests
 
 async function sendMail({ to, subject, text, html }) {
+  // Brevo uses HTTPS, so no SMTP port or outbound SMTP access is needed on Render.
+  if (hasBrevo()) {
+    if (!process.env.MAIL_FROM) throw new Error('MAIL_FROM must be set to your verified sender email in Brevo.');
+    const sender = parseSender(process.env.MAIL_FROM);
+    if (!sender.email || !sender.email.includes('@')) throw new Error('MAIL_FROM must contain a valid verified sender email.');
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'api-key': process.env.BREVO_API_KEY, 'Content-Type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({ sender, to: [{ email: to }], subject, textContent: text, htmlContent: html })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.message || result.code || `Brevo API returned HTTP ${response.status}`);
+    return result;
+  }
   // Resend uses HTTPS, so no SMTP port or outbound SMTP access is needed on Render.
   if (hasResend()) {
     if (!process.env.MAIL_FROM) throw new Error('MAIL_FROM must be set to a sender address verified in Resend.');

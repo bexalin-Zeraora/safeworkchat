@@ -28,3 +28,7 @@ See `docs/DEPLOY_ONLINE.md` for MongoDB Atlas, Google sign-in and hosting steps,
 
 ## New in this version
 E-mail notifications, forgot-password, Google sign-in without passphrase, multi-select group creation, group Files section, document upload/versioning and task-document permissions. See `docs/CHANGES_AND_SETUP.md` for setup, environment variables, Render deployment and testing.
+
+
+### Email on Render (without SMTP)
+Set `BREVO_API_KEY`, `MAIL_FROM` (the sender address verified in Brevo), `EMAIL_NOTIFICATIONS=true`, and `APP_URL` in your Render backend environment. Brevo delivery uses its HTTPS API; do not set SMTP credentials.

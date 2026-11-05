@@ -236,7 +236,7 @@ const forgotPassword = async (req, res) => {
     if (typeof req.body.email !== 'string' || checkEmail(req.body.email)) return res.status(400).json({ message: 'Enter a valid email address' });
     const email = req.body.email.trim().toLowerCase();
     if (rateLimited('f:' + req.ip, 10) || rateLimited('fe:' + email, 3, 600000)) return res.status(429).json({ message: 'Too many requests. Try again in a few minutes.' });
-    if (!mail.enabled()) { console.warn('Password reset requested but e-mail is not configured (SMTP_USER / SMTP_PASS).'); return res.status(503).json({ message: 'E-mail is not set up on this server, so reset links cannot be sent. Contact the administrator.' }); }
+    if (!mail.enabled()) { console.warn('Password reset requested but e-mail is not configured (BREVO_API_KEY, RESEND_API_KEY, or SMTP_USER / SMTP_PASS).'); return res.status(503).json({ message: 'E-mail is not set up on this server, so reset links cannot be sent. Contact the administrator.' }); }
     const user = await User.findOne({ email }).select('+resetTokenExpires');
     if (user) {
       const ttl = RESET_MINUTES() * 60000;
