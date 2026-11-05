@@ -8,7 +8,9 @@
     "dev": "nodemon server.js",
     "seed": "node seed/seedUsers.js",
     "demo": "node seed/demo.js",
-    "demo:reset": "node seed/demo.js --reset"
+    "demo:reset": "node seed/demo.js --reset",
+    "test": "node tests/run.js",
+    "test:email": "node scripts/sendTestEmail.js"
   },
   "keywords": [],
   "author": "",
@@ -27,8 +29,11 @@
     "google-auth-library": "^11.3.1",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
+    "mammoth": "^1.8.0",
     "mongoose": "^9.11.1",
     "multer": "^2.4.0",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.16",
     "quill-delta-to-html": "^0.12.1",
     "socket.io": "^4.8.4",
     "tweetnacl": "^1.0.3",

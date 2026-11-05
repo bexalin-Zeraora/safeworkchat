@@ -36,6 +36,26 @@ document.getElementById('showLogin').addEventListener('click', (e) => {
   hideAlert();
 });
 
+// Forgot password: show the small form, ask the server to e-mail a reset link
+const forgotForm = document.getElementById('forgotForm');
+document.getElementById('showForgot').addEventListener('click', (e) => {
+  e.preventDefault();
+  loginForm.classList.add('hidden'); forgotForm.classList.remove('hidden'); hideAlert();
+  const typed = document.getElementById('loginEmail').value.trim();
+  if (/@/.test(typed)) document.getElementById('forgotEmail').value = typed;
+});
+document.getElementById('backToLogin').addEventListener('click', (e) => { e.preventDefault(); forgotForm.classList.add('hidden'); loginForm.classList.remove('hidden'); hideAlert(); });
+forgotForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('forgotBtn'); btn.disabled = true;
+  try {
+    const r = await fetch(`${API_URL}/forgot`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('forgotEmail').value.trim() }) });
+    const d = await r.json().catch(() => ({}));
+    showAlert(d.message || (r.ok ? 'If the account exists, a reset link was sent.' : 'Could not send the reset link.'), r.ok ? 'success' : 'danger');
+  } catch (err) { showAlert('Network error. Is the backend running?'); }
+  setTimeout(() => { btn.disabled = false; }, 4000);
+});
+
 function showAlert(message, type = 'danger') {
   alertBox.textContent = message;
   alertBox.className = `alert alert-${type}`;
@@ -62,24 +82,35 @@ function saveSession(data) {
   sess.set('user', JSON.stringify(user), remember());
 }
 
+const authPost = (path, token, method, body) => fetch(`${API_URL}${path}`, { method, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify(body) });
+
 async function setupKeysAfterLogin(data, password) {
+  // keys managed by the server (accounts created with Google): nothing to type
+  if (data.serverSk && data.publicKey) { storeKeys(data.publicKey, data.serverSk); return true; }
   // already unlocked on this device for this account
   if (data.publicKey && sess.get('e2ee_pk') === data.publicKey && sess.get('e2ee_sk')) return true;
 
   if (data.publicKey && data.keyBackup) {
-    const sk = E2EE.unlock(data.keyBackup, password);
-    if (!sk) return false;
+    let sk = E2EE.unlock(data.keyBackup, password);
+    if (!sk) {
+      // normal after "Forgot password": the key backup is still locked with the OLD password
+      const old = await askSecret({ mode: 'recover', hasPassword: true, backup: data.keyBackup });
+      if (!old) return false;
+      if (old.fresh) {
+        const r = await authPost('/keys/reset', data.token, 'POST', { password });
+        if (!r.ok) return false;
+        return setupKeysAfterLogin({ ...data, publicKey: '', keyBackup: null }, password);   // continue as a brand-new key
+      }
+      sk = old;
+      await authPost('/key-backup', data.token, 'PUT', { keyBackup: E2EE.backup(sk, password) });   // from now on the NEW password unlocks it
+    }
     storeKeys(data.publicKey, sk);
     return true;
   }
 
   // account created before encryption existed: create keys once and upload the public key + encrypted backup
   const keys = E2EE.genKeys();
-  const res = await fetch(`${API_URL}/keys`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + data.token },
-    body: JSON.stringify({ publicKey: keys.pk, keyBackup: E2EE.backup(keys.sk, password) })
-  });
+  const res = await authPost('/keys', data.token, 'PUT', { publicKey: keys.pk, keyBackup: E2EE.backup(keys.sk, password) });
   if (!res.ok) return false;
   storeKeys(keys.pk, keys.sk);
   return true;
@@ -197,19 +228,21 @@ function askSecret({ mode, hasPassword, backup, token, username, email }) {
   return new Promise((resolve) => {
     const $ = (id) => document.getElementById(id);
     const modal = $('secretModal'), err = $('smErr'), pass = $('smPass'), pass2 = $('smPass2');
-    const create = mode === 'create';
-    $('smTitle').textContent = create ? 'Create your encryption passphrase' : 'Unlock your chat encryption';
-    $('smText').textContent = create
+    const create = mode === 'create', recover = mode === 'recover';
+    $('smFresh').hidden = !recover;
+    $('smFresh').onclick = (e) => { e.preventDefault(); if (confirm('Start with new encryption keys? Messages protected by your old key can no longer be read.')) done({ fresh: true }); };
+    $('smTitle').textContent = recover ? 'Enter your previous password' : create ? 'Create your encryption passphrase' : (hasPassword ? 'Enter your account password' : 'Enter your encryption passphrase');
+    $('smText').textContent = recover ? 'Your password was changed, but your chats are still locked with your previous password. Enter it once so you can keep reading them; your new password will unlock them from now on.' : create
       ? 'Google confirms who you are. This passphrase protects the key that encrypts your chats, so even the server cannot read your messages. You will type it every time you sign in. If you forget it, old messages cannot be recovered.'
-      : 'Google has already signed you in. This is not another login step: enter the passphrase that protects your end-to-end encrypted chat key. For an account originally registered with email and password, this is the same password you used when setting up chat encryption.';
+      : (hasPassword ? 'Your chats are locked with your account password. Enter it to open them.' : 'Enter the encryption passphrase you created to open your chats.');
     $('smCreate').hidden = !create; pass.value = ''; pass2.value = ''; err.textContent = '';
-    pass.placeholder = create ? 'Choose a passphrase' : 'Chat encryption passphrase';
+    pass.placeholder = recover ? 'Previous password' : create ? 'Choose a passphrase' : (hasPassword ? 'Account password' : 'Encryption passphrase');
     pass.autocomplete = create ? 'new-password' : 'current-password';
     let render = null;
     if (create) render = PasswordRules.attach(pass, $('smRules'), () => ({ username, email }), pass2);
     modal.hidden = false; setTimeout(() => pass.focus(), 50);
 
-    const done = (v) => { modal.hidden = true; $('smOk').onclick = $('smCancel').onclick = null; pass.onkeydown = pass2.onkeydown = null; resolve(v); };
+    const done = (v) => { modal.hidden = true; $('smOk').onclick = $('smCancel').onclick = $('smFresh').onclick = null; pass.onkeydown = pass2.onkeydown = null; resolve(v); };
     const busy = (b, t) => { $('smOk').disabled = b; $('smOk').textContent = t || 'Continue'; };
     const submit = async () => {
       err.textContent = '';
@@ -241,10 +274,16 @@ async function onGoogleCredential(resp) {
     const r = await fetch(`${API_URL}/google`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ credential: resp.credential }) });
     const data = await r.json().catch(() => ({}));
     if (!r.ok) return showAlert(data.message || 'Google sign-in failed.');
-    if (data.publicKey && data.keyBackup) {
+    if (data.serverSk && data.publicKey) {
+      storeKeys(data.publicKey, data.serverSk);          // Google proved who you are: no extra password or passphrase is asked
+    } else if (data.publicKey && data.keyBackup) {
+      // older Google-only account that was protected with its own passphrase: ask once, then offer to switch to automatic unlock
       const sk = await askSecret({ mode: 'unlock', hasPassword: data.hasPassword, backup: data.keyBackup });
       if (!sk) return showAlert('Sign-in cancelled.');
       storeKeys(data.publicKey, sk);
+      if (!data.hasPassword && confirm('From now on, unlock your chats automatically when you sign in with Google (no passphrase)?\n\nThe server then keeps your encryption key protected with its own secret.')) {
+        await authPost('/keys/server-managed', data.token, 'POST', { secretKey: sk }).catch(() => {});
+      }
     } else {
       const made = await askSecret({ mode: 'create', token: data.token, username: data.username, email: data.email });
       if (!made) return showAlert('Sign-in cancelled. You need an encryption passphrase to use the chats.');

@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const lastSeenWrite = new Map();
+const { touch } = require('../utils_active');
 
 const protect = async (req, res, next) => {
   const header = req.headers.authorization;
@@ -13,12 +13,7 @@ const protect = async (req, res, next) => {
     // a valid token for a user that no longer exists (database was reset) must not get through
     if (!user) return res.status(401).json({ message: 'Not authorized, user no longer exists' });
     req.user = user;
-    // Throttle activity writes so ordinary API traffic does not cause a DB write per request.
-    const key = String(user._id), now = Date.now(), previous = lastSeenWrite.get(key) || 0;
-    if (now - previous > 5 * 60 * 1000) {
-      lastSeenWrite.set(key, now);
-      User.updateOne({ _id: user._id }, { $set: { lastActiveAt: new Date(), inactivityEmailSentAt: null } }).catch(() => {});
-    }
+    touch(user._id);   // remembers when the user was last active (inactivity e-mail)
     return next();
   } catch (error) {
     return res.status(401).json({ message: 'Not authorized, token failed' });

@@ -32,11 +32,11 @@ function limited(userId) {
   return list.length > 10;
 }
 
-// GET /api/friends -> accepted friends (username + public key only; no emails)
+// GET /api/friends -> accepted friends (username, e-mail and public key; shown only to the user's own friends)
 exports.list = async (req, res) => {
   try {
     const ids = await friendIds(req.user._id);
-    const users = await User.find({ _id: { $in: ids } }).select('username publicKey').sort({ username: 1 });
+    const users = await User.find({ _id: { $in: ids } }).select('username email publicKey').sort({ username: 1 });
     res.json(users);
   } catch (e) { err(res, e); }
 };

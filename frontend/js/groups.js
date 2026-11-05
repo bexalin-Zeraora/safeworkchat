@@ -10,33 +10,38 @@ async function api(path, opts = {}) {
   if (!r.ok) throw new Error(d.message || 'Request failed');
   return d;
 }
-const picked = new Map(); // id -> { username, role }
-const BADGE = { Admin: 'tag Low', Manager: 'tag Medium', Member: 'tag' };
+const picked = new Map(); // id -> { username, email, role, pk }   (a Map: the same person can never be added twice)
+let friends = [], shown = [];
 
 function drawPicked() {
-  $('picked').innerHTML = [...picked].map(([id, m]) => `<div class="d-flex align-items-center gap-2 py-1 small">${avImg(m.username, 26)} ${esc(m.username)}<span class="${BADGE[m.role]} ms-auto" style="background:#eef2f4">${esc(m.role === 'Member' ? 'User' : m.role)}</span><a href="#" data-rm="${esc(id)}" class="text-danger ms-2">✕</a></div>`).join('');
+  $('chips').innerHTML = [...picked].map(([id, m]) => `<span class="chip">${avImg(m.username, 22)}<span>${esc(m.username)}</span><button type="button" data-rm="${esc(id)}" aria-label="Remove ${esc(m.username)}">✕</button></span>`).join('');
+  $('cnt').textContent = picked.size ? `${picked.size} selected` : 'No one selected yet (you can also create the group alone)';
   $('rl').style.display = picked.size ? 'block' : 'none';
   $('roles').innerHTML = [...picked].map(([id, m]) => `<div class="d-flex gap-2 mb-2"><div class="fld" style="flex:1">${esc(m.username)}</div>
     <select class="fld" style="flex:1" data-id="${esc(id)}">${['Admin', 'Manager', 'Member'].map((r) => `<option value="${r}" ${r === m.role ? 'selected' : ''}>${r === 'Member' ? 'User' : r}</option>`).join('')}</select></div>`).join('');
-  document.querySelectorAll('[data-rm]').forEach((a) => a.onclick = (e) => { e.preventDefault(); picked.delete(a.dataset.rm); drawPicked(); });
-  document.querySelectorAll('#roles select').forEach((s) => s.onchange = () => { picked.get(s.dataset.id).role = s.value; drawPicked(); });
+  document.querySelectorAll('[data-rm]').forEach((b) => b.onclick = () => { picked.delete(b.dataset.rm); drawPicked(); drawResults(); });
+  document.querySelectorAll('#roles select').forEach((s) => s.onchange = () => { picked.get(s.dataset.id).role = s.value; });
 }
 
-let friends = [];
+// the list stays open, so several people can be ticked one after another
 function drawResults() {
   const v = $('ms').value.trim().toLowerCase();
-  if (!v) { $('res').innerHTML = ''; return; }
-  const list = friends.filter((u) => !picked.has(u._id) && u.username.toLowerCase().includes(v));
-  $('res').innerHTML = list.length ? list.map((u) => `<button class="up-opt" data-id="${esc(u._id)}" data-n="${esc(u.username)}" data-pk="${esc(u.publicKey || '')}" ${u.publicKey ? '' : 'style="opacity:.6" title="This friend must log in once to set up encryption"'}>${avImg(u.username, 26)} ${esc(u.username)}${u.publicKey ? '' : ' <span class="text-muted small ms-auto">needs to log in once</span>'}</button>`).join('')
-    : '<div class="small text-muted">No friends match. <a href="/pages/friends.html">Add friends</a> first.</div>';
+  shown = friends.filter((u) => !v || u.username.toLowerCase().includes(v) || String(u.email || '').toLowerCase().includes(v)).slice(0, 60);
+  $('res').innerHTML = shown.length ? shown.map((u) => `<button type="button" class="up-opt ${picked.has(u._id) ? 'on' : ''}" data-id="${esc(u._id)}" ${u.publicKey ? '' : 'disabled style="opacity:.6" title="This friend must log in once to set up encryption"'}>
+      <span class="chk">${picked.has(u._id) ? '✓' : ''}</span>${avImg(u.username, 26)}<span>${esc(u.username)}<span class="em">${esc(u.email || '')}${u.publicKey ? '' : ' · needs to log in once'}</span></span></button>`).join('')
+    : `<div class="small text-muted p-2">${friends.length ? 'No friends match.' : 'You have no friends yet.'} <a href="/pages/friends.html">Add friends</a> first.</div>`;
   document.querySelectorAll('#res .up-opt').forEach((b) => b.onclick = () => {
-    if (!b.dataset.pk) return;
-    picked.set(b.dataset.id, { username: b.dataset.n, role: 'Member', pk: b.dataset.pk });
-    $('res').innerHTML = ''; $('ms').value = ''; drawPicked();
+    const u = friends.find((f) => f._id === b.dataset.id); if (!u || !u.publicKey) return;
+    if (picked.has(u._id)) picked.delete(u._id); else picked.set(u._id, { username: u.username, email: u.email, role: 'Member', pk: u.publicKey });
+    drawPicked(); drawResults();
   });
 }
 $('ms').oninput = drawResults;
-fetch('/api/friends', { headers: { Authorization: 'Bearer ' + token } }).then((r) => r.json()).then((d) => { friends = Array.isArray(d) ? d : []; }).catch(() => {});
+$('ms').onfocus = () => { $('res').hidden = false; drawResults(); };
+$('selAll').onclick = (e) => { e.preventDefault(); shown.filter((u) => u.publicKey).forEach((u) => { if (!picked.has(u._id)) picked.set(u._id, { username: u.username, email: u.email, role: 'Member', pk: u.publicKey }); }); drawPicked(); drawResults(); };
+$('clrAll').onclick = (e) => { e.preventDefault(); picked.clear(); drawPicked(); drawResults(); };
+fetch('/api/friends', { headers: { Authorization: 'Bearer ' + token } }).then((r) => r.json()).then((d) => { friends = Array.isArray(d) ? d : []; drawResults(); }).catch(() => {});
+drawPicked();
 
 $('go').onclick = async () => {
   $('err').textContent = '';
@@ -55,31 +60,18 @@ $('go').onclick = async () => {
   } catch (e) { $('err').textContent = e.message; $('go').disabled = false; }
 };
 
-let myGroups = [];
-async function loadGroupFiles() {
-  const groupId = $('fileGroup').value;
-  if (!groupId) { $('groupFiles').textContent = 'Select a group to view shared files.'; return; }
-  try {
-    const files = await fetch(`/api/groups/${groupId}/files`, { headers: { Authorization: 'Bearer ' + token } }).then(async r => { const d = await r.json().catch(() => []); if (!r.ok) throw new Error(d.message || 'Could not load files'); return d; });
-    $('groupFiles').innerHTML = files.length ? files.map(f => `<div class="d-flex align-items-center justify-content-between border-bottom py-2 gap-2"><span><i class="fas fa-file me-2"></i>${esc(f.originalName)}<small class="d-block text-muted">${esc(f.uploadedBy)} · ${new Date(f.createdAt).toLocaleString()}</small></span><a href="#" data-dl="${esc(f._id)}">Download</a></div>`).join('') : 'No files uploaded to this group yet.';
-    $('groupFiles').querySelectorAll('[data-dl]').forEach(a => a.onclick = async e => { e.preventDefault(); const r = await fetch(`/api/groups/${groupId}/files/${a.dataset.dl}/download`, { headers: { Authorization: 'Bearer ' + token } }); if (!r.ok) { $('fileMsg').textContent = 'Download failed'; return; } const blob = await r.blob(), url = URL.createObjectURL(blob), link = document.createElement('a'); link.href = url; link.download = files.find(f => f._id === a.dataset.dl)?.originalName || 'download'; link.click(); URL.revokeObjectURL(url); });
-  } catch (e) { $('groupFiles').textContent = e.message; }
-}
-$('fileGroup').onchange = loadGroupFiles;
-$('uploadGroupFile').onclick = async () => {
-  $('fileMsg').textContent = '';
-  const groupId = $('fileGroup').value, file = $('groupFile').files[0];
-  if (!groupId || !file) { $('fileMsg').textContent = 'Choose a group and a file first.'; return; }
-  if (file.size > 10 * 1024 * 1024) { $('fileMsg').textContent = 'Maximum file size is 10 MB.'; return; }
-  const form = new FormData(); form.append('file', file);
-  try { $('uploadGroupFile').disabled = true; const r = await fetch(`/api/groups/${groupId}/files`, { method: 'POST', headers: { Authorization: 'Bearer ' + token }, body: form }); const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.message || 'Upload failed'); $('fileMsg').textContent = 'File uploaded successfully.'; $('groupFile').value = ''; await loadGroupFiles(); }
-  catch (e) { $('fileMsg').textContent = e.message; } finally { $('uploadGroupFile').disabled = false; }
-};
-
 (async () => {
   try {
-    myGroups = (await api('/my-groups')).filter((x) => !x.isDirect);
-    $('mine').innerHTML = myGroups.length ? myGroups.map((x) => `<div class="d-flex justify-content-between py-1 border-bottom"><span class="text-dark">${avImg(x.name, 26, 'group')} ${esc(x.name)}</span><span class="tag Low">${esc(x.myRole)}</span></div>`).join('') : 'You are not in any group yet.';
-    $('fileGroup').innerHTML = '<option value="">Select a group</option>' + myGroups.map(g => `<option value="${esc(g._id)}">${esc(g.name)}</option>`).join('');
+    const g = (await api('/my-groups')).filter((x) => !x.isDirect);
+    $('mine').innerHTML = g.length ? g.map((x) => `<div class="py-2 border-bottom"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap"><span class="text-dark">${avImg(x.name, 26, 'group')} ${esc(x.name)}</span>
+      <span class="small"><a href="#" data-mem="${esc(x._id)}">Members</a> · <a href="/pages/files.html?groupId=${esc(x._id)}">Files</a> · <a href="/pages/documents.html?groupId=${esc(x._id)}">Documents</a> <span class="tag Low ms-1">${esc(x.myRole === 'Member' ? 'User' : x.myRole)}</span></span></div><div class="mem-row" id="m-${esc(x._id)}" hidden></div></div>`).join('') : 'You are not in any group yet.';
+    document.querySelectorAll('[data-mem]').forEach((a) => a.onclick = async (e) => {
+      e.preventDefault();
+      const box = $('m-' + a.dataset.mem);
+      if (!box.hidden) { box.hidden = true; return; }
+      box.hidden = false; box.textContent = 'Loading…';
+      try { const m = await api(`/${a.dataset.mem}/members`); box.innerHTML = m.map((u) => `<span class="chip">${avImg(u.username, 22)}<span>${esc(u.username)} · ${esc(u.role === 'Member' ? 'User' : u.role)}</span></span>`).join(''); }
+      catch (er) { box.textContent = er.message; }
+    });
   } catch (e) { $('mine').textContent = e.message; }
 })();

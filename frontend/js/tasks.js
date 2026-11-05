@@ -183,7 +183,7 @@ async function update(id) {
 
 // ---------- Screen 8: Task Details & History ----------
 async function detail(id, tab = 'Status History') {
-  const [t, acts] = await Promise.all([api('/tasks/' + id), api(`/tasks/${id}/activity`)]);
+  const [t, acts, tdocs] = await Promise.all([api('/tasks/' + id), api(`/tasks/${id}/activity`), api('/documents?taskId=' + id).catch(() => [])]);
   const hist = acts.filter((a) => a.action === 'stage_update').reverse();
   const workLog = acts.filter((a) => a.action === 'stage_working');   // newest first
   const forStage = (list, s) => list.filter((h) => h.stageId === String(s._id) || (!h.stageId && h.stage === s.name));
@@ -208,6 +208,9 @@ async function detail(id, tab = 'Status History') {
         : s.state === 'in_progress' ? `<small style="color:#c27d0e"><b>In progress</b>${w ? ' · since ' + fmt(w.createdAt) : ''}</small>${w?.comment ? `<small>“${esc(w.comment)}”</small>` : ''}` : '<small>Pending</small>';
       return `<div class="it ${s.done ? '' : 'p'}"><span class="n">${i + 1}</span><b>${esc(s.name)}</b>${desc}${body}</div>`; }).join('')}</div>`,
     'Files': (files.length ? files.map((a) => `<div class="mb-2">${link(a)} <span class="small text-muted">${sz(a.file.size || 0)} · ${esc(a.stage)} · ${esc(a.userId?.username)}</span></div>`).join('') : '<div class="text-muted small">No files uploaded yet.</div>') + (hist.some((a) => a.fileHidden) ? '<div class="small text-muted mt-2"><i class="fas fa-lock me-1"></i>Some uploads are visible only to the assignee and group Admins/Managers.</div>' : ''),
+    'Documents': `${tdocs.length ? tdocs.map((d) => `<div class="mb-2 small"><i class="far fa-file-alt me-1"></i><a href="/pages/documents.html?id=${esc(d._id)}">${esc(d.title)}.${esc(d.type)}</a> <span class="text-muted">· v${d.currentVersion}${d.updatedBy ? ' · modified by ' + esc(d.updatedBy.username) : ''}</span></div>`).join('') : '<div class="text-muted small">No documents for this task yet.</div>'}
+      <div class="small text-muted mt-2">${canAct(t) ? 'You can create, upload and edit documents for this task.' : 'Only ' + esc(t.assignedTo?.username) + ' (the assignee) can edit task documents.'}</div>
+      ${canAct(t) || t.myRole === 'Admin' || t.myRole === 'Manager' ? `<div class="d-flex gap-2 mt-2"><a class="btn btn-outline-success btn-sm" href="/pages/documents.html?taskId=${esc(id)}&new=1">New document</a><a class="btn btn-outline-success btn-sm" href="/pages/documents.html?taskId=${esc(id)}&new=upload">Upload existing</a></div>` : ''}`,
     'Comments': `${comments.map((a) => `<div class="mb-2 small"><b>${esc(a.userId?.username)}</b> <span class="text-muted">${fmt(a.createdAt)}</span><br>${esc(a.comment)}</div>`).join('') || '<div class="text-muted small mb-2">No comments yet.</div>'}
       <div class="d-flex gap-2"><input id="nc" class="fld" maxlength="500" placeholder="Write a comment"><button id="nb" class="btn-s">Send</button></div>`
   };

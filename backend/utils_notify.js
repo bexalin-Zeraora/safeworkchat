@@ -1,6 +1,5 @@
 const Notification = require('./models/Notification');
 const Message = require('./models/Message');
-const { sendEmail } = require('./utils_email');
 
 const TZ = process.env.DISPLAY_TZ || 'Asia/Kolkata';
 const fmtDate = (d) => new Date(d).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: TZ });
@@ -23,4 +22,4 @@ async function postSystemMessage(io, groupId, senderId, content, link = '') {
   return m;
 }
 
-module.exports = { notifyUser, postSystemMessage, fmtDate, sendEmail };
+module.exports = { notifyUser, postSystemMessage, fmtDate };

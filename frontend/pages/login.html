@@ -90,7 +90,7 @@
               <input class="form-check-input" type="checkbox" id="rememberMe">
               <label class="form-check-label" for="rememberMe">Remember me</label>
             </div>
-            <a href="#" class="forgot-link">Forgot Password?</a>
+            <a href="#" class="forgot-link" id="showForgot">Forgot Password?</a>
           </div>
 
           <button type="submit" class="btn btn-primary btn-block mb-3">
@@ -107,6 +107,18 @@
               <a href="#" id="showRegister" class="text-primary fw-bold">Sign Up</a>
             </p>
           </div>
+        </form>
+
+        <!-- Forgot password (Hidden) -->
+        <form id="forgotForm" class="hidden">
+          <h5 class="mb-2">Forgot your password?</h5>
+          <p class="text-muted small">Enter your account e-mail. We will send you a link to choose a new password.</p>
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control custom-input" id="forgotEmail" maxlength="100" autocomplete="email" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block mb-3" id="forgotBtn"><i class="fas fa-paper-plane me-2"></i>Send reset link</button>
+          <div class="text-center"><a href="#" id="backToLogin" class="text-primary fw-bold">Back to login</a></div>
         </form>
 
         <!-- Register Form (Hidden) -->
@@ -156,6 +168,7 @@
         <input type="password" id="smPass2" class="form-control custom-input mt-2" placeholder="Repeat the passphrase" autocomplete="off">
       </div>
       <div id="smErr" class="sm-err"></div>
+      <a href="#" id="smFresh" class="small d-block mt-2" hidden>I do not remember it: start with new encryption keys</a>
       <div class="d-flex gap-2 mt-3">
         <button type="button" id="smOk" class="btn btn-success flex-fill">Continue</button>
         <button type="button" id="smCancel" class="btn btn-outline-secondary">Cancel</button>

@@ -15,12 +15,15 @@ const groupRoutes = require('./routes/groupRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const documentRoutes = require('./routes/documentRoutes');
+const fileRoutes = require('./routes/fileRoutes');
+const emailJobs = require('./jobs/emailJobs');
+const { touch } = require('./utils_active');
+const { MAX_MB } = require('./utils_storage');
 const Message = require('./models/Message');
 const GroupMember = require('./models/GroupMember');
 const jwt = require('jsonwebtoken');
 const { isCipher } = require('./utils_crypto');
 const Group = require('./models/Group');
-const User = require('./models/User');
 const friendRoutes = require('./routes/friendRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -57,7 +60,7 @@ app.use(helmet({
     useDefaults: true,
     directives: {
       'script-src': ["'self'", "'unsafe-inline'", 'https://accounts.google.com'],
-      'frame-src': ["'self'", 'https://accounts.google.com'],
+      'frame-src': ["'self'", 'blob:', 'https://accounts.google.com'],   // blob: = PDF preview of files the browser fetched with the login token
       'script-src-attr': ["'unsafe-inline'"],
       'connect-src': ["'self'", 'ws:', 'wss:', 'https://accounts.google.com'],
       'img-src': ["'self'", 'data:', 'blob:'],
@@ -108,6 +111,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/documents', documentRoutes);
+app.use('/api/files', fileRoutes);
 
 app.get('/', (req, res) => {
   res.redirect('/pages/login.html');
@@ -122,6 +126,7 @@ io.use((socket, next) => {
   try {
     const decoded = jwt.verify(socket.handshake.auth?.token, process.env.JWT_SECRET);
     socket.userId = String(decoded.id);
+    touch(socket.userId);
     next();
   } catch (err) {
     next(new Error('Not authorized'));
@@ -133,7 +138,6 @@ const isId = (v) => typeof v === 'string' && /^[a-f0-9]{24}$/i.test(v);
 
 io.on('connection', (socket) => {
   console.log(`A user connected: ${socket.id}`);
-  User.updateOne({ _id: socket.userId }, { $set: { lastActiveAt: new Date(), inactivityEmailSentAt: null } }).catch(() => {});
   socket.join('user:' + socket.userId); // private room for personal notifications
 
   socket.on('joinRoom', async (groupId) => {
@@ -181,7 +185,8 @@ app.use((err, req, res, next) => {
   if (res.headersSent) return next(err);
   if (err.type === 'entity.parse.failed') return res.status(400).json({ message: 'Invalid JSON in request' });
   if (err.type === 'entity.too.large') return res.status(413).json({ message: 'Request is too large' });
-  if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ message: 'File is too large (max 10 MB)' });
+  if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ message: `File is too large (max ${MAX_MB} MB)` });
+  if (err.name === 'MulterError') return res.status(400).json({ message: 'Upload failed: send exactly one file.' });
   console.error('Unhandled error:', err);
   res.status(500).json({ message: 'Something went wrong on the server' });
 });
@@ -210,7 +215,7 @@ server.listen(PORT, '0.0.0.0', () => {
 });
 
 // deadline reminders (group message + notification) start once the database is connected
-const startReminders = () => { dueReminders.start(io); console.log('⏰ Deadline reminder job running (checks every minute)'); };
+const startReminders = () => { emailJobs.start(); dueReminders.start(io); console.log('⏰ Deadline reminder job running (checks every minute)'); };
 if (mongoose.connection.readyState === 1) startReminders(); else mongoose.connection.once('open', startReminders);
 
 // Close cleanly on Ctrl+C

@@ -182,6 +182,7 @@ async function selectGroup(groupId, name, role) {
   const direct = !!info.isDirect;
   document.getElementById('rolePills').style.display = direct ? 'none' : '';
   document.getElementById('infoBtn').style.display = direct ? 'none' : '';
+  const fb = document.getElementById('filesBtn'); fb.style.display = direct ? 'none' : 'inline-flex'; fb.href = '/pages/files.html?groupId=' + groupId;
   const shownRole = role === 'Member' ? 'User' : role;
   document.querySelectorAll('#rolePills .pill').forEach((p) => p.classList.toggle('on', p.dataset.r === shownRole));
   document.getElementById('currentGroupRole').textContent = direct ? 'Direct message' : 'Loading members…';
@@ -285,24 +286,23 @@ async function openInfo() {
       const inGroup = new Set(m.map((x) => x._id));
       friendsToAdd = (Array.isArray(fr) ? fr : []).filter((u) => !inGroup.has(u._id) && u.publicKey);
       html += friendsToAdd.length
-        ? `<div class="mt-3"><div class="small fw-bold mb-1">Add friends (select multiple)</div><div class="d-flex flex-column gap-2"><select id="addWho" class="form-select form-select-sm" multiple size="4">${friendsToAdd.map((u) => `<option value="${esc(u._id)}">${esc(u.username)}</option>`).join('')}</select><div class="d-flex gap-2"><select id="addRole" class="form-select form-select-sm" style="max-width:130px"><option value="Member">User</option><option>Manager</option><option>Admin</option></select><button id="addBtn" class="btn btn-success btn-sm">Add selected</button></div></div><div class="small text-muted mt-1">Use Ctrl (Windows) to select more than one person. New members see only messages sent after they join.</div><div id="addErr" class="small text-danger mt-1"></div></div>`
+        ? `<div class="mt-3"><div class="small fw-bold mb-1">Add a friend</div><div class="d-flex gap-2"><select id="addWho" class="form-select form-select-sm">${friendsToAdd.map((u) => `<option value="${esc(u._id)}">${esc(u.username)}</option>`).join('')}</select><select id="addRole" class="form-select form-select-sm" style="max-width:110px"><option value="Member">User</option><option>Manager</option><option>Admin</option></select><button id="addBtn" class="btn btn-success btn-sm">Add</button></div><div class="small text-muted mt-1">They will see only messages sent after they join.</div><div id="addErr" class="small text-danger mt-1"></div></div>`
         : `<div class="small text-muted mt-3">No friends to add. <a href="/pages/friends.html">Manage friends</a></div>`;
     }
     document.getElementById('mmBody').innerHTML = html;
     const btn = document.getElementById('addBtn');
     if (btn) btn.onclick = async () => {
-      const selectedIds = [...document.getElementById('addWho').selectedOptions].map(o => o.value);
-      const selectedFriends = friendsToAdd.filter(u => selectedIds.includes(u._id));
+      const friend = friendsToAdd.find((u) => u._id === document.getElementById('addWho').value);
       const myPk = sess.get('e2ee_pk');
-      if (!selectedFriends.length || !myPk || !mySk()) { document.getElementById('addErr').textContent = 'Select at least one friend.'; return; }
+      if (!friend || !myPk || !mySk()) return;
       // make a NEW group key and wrap it for every member + the newcomer
       const newKey = E2EE.newGroupKey();
-      const recipients = [...m.map((x) => ({ userId: x._id, pk: x.publicKey })), ...selectedFriends.map(friend => ({ userId: friend._id, pk: friend.publicKey }))];
+      const recipients = [...m.map((x) => ({ userId: x._id, pk: x.publicKey })), { userId: friend._id, pk: friend.publicKey }];
       if (recipients.some((r) => !r.pk)) { document.getElementById('addErr').textContent = 'A member has no encryption key yet.'; return; }
       btn.disabled = true;
       try {
         const r = await fetch(`${API_URL}/groups/${gid}/members`, { method: 'POST', headers: { ...h, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userIds: selectedFriends.map(friend => friend._id), role: document.getElementById('addRole').value, keyVersion: info.keyVersion + 1,
+          body: JSON.stringify({ userId: friend._id, role: document.getElementById('addRole').value, keyVersion: info.keyVersion + 1,
             keys: recipients.map((x) => ({ userId: x.userId, key: E2EE.wrapKey(newKey, x.pk, mySk(), myPk) })) }) });
         const d = await r.json();
         if (!r.ok) throw new Error(d.message || 'Failed');

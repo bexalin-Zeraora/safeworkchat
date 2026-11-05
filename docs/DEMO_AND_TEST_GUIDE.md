@@ -122,13 +122,3 @@ Tip: use a different browser tab (or a private window) for each user. Each tab k
 | 46 | Change password | Profile: Change password, then log out and in with the new one | Works, and old chats still decrypt |
 | 32 | Two task panels | Bexalin: Tasks, switch between **My Tasks** and **Assigned to friends** | My Tasks lists tasks given to her; Assigned to friends lists tasks she gave to others, with their name and a Friend badge, view only |
 | 31 | Other laptop | Open the "Other devices" address from the terminal | App loads and works over the local network |
-
-
-## Added review checks
-
-1. In an existing group, open Group Info and select multiple friends in the Add friends list (Ctrl-click on Windows), then add them together. The group key is rotated and wrapped for every existing and new member.
-2. Open Groups → Group Files & Media, choose a group, upload an image/PDF/document, and download it from the file list.
-3. Open Documents → Upload existing, select a group and import a TXT/MD/DOCX file. Open the imported document, edit it, save, and verify a new version appears in Version History.
-4. Configure Gmail SMTP variables in the backend environment. Assign a task and verify the assignee receives an email; test a task deadline within `DUE_SOON_HOURS` and an overdue task.
-5. To test inactivity without waiting a week, temporarily set `INACTIVE_EMAIL_DAYS=0` in a local test environment and use an old test account with no recent activity. Do not use real users for this test.
-6. Google Sign-in first authenticates with Google. The following chat-key prompt is an end-to-end encryption unlock passphrase, not a second Google login or a new account password.

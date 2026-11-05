@@ -24,3 +24,7 @@ Offline-first, real-time workplace collaboration app (chat, tasks, calendar, doc
 
 ## Deploying online
 See `docs/DEPLOY_ONLINE.md` for MongoDB Atlas, Google sign-in and hosting steps, and `docs/DEMO_AND_TEST_GUIDE.md` for demo data and test cases.
+
+
+## New in this version
+E-mail notifications, forgot-password, Google sign-in without passphrase, multi-select group creation, group Files section, document upload/versioning and task-document permissions. See `docs/CHANGES_AND_SETUP.md` for setup, environment variables, Render deployment and testing.

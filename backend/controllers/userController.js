@@ -4,8 +4,7 @@ const { v4: uuid } = require('uuid');
 const User = require('../models/User');
 const { forget } = require('../utils_avatar');
 
-const DIR = path.join(__dirname, '..', 'uploads', 'avatars');
-fs.mkdirSync(DIR, { recursive: true });
+const DIR = require('../utils_storage').dirFor('avatars');
 const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const err = (res, e) => res.status(500).json({ message: 'Server error', error: e.message });
 

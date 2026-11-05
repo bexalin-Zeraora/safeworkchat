@@ -14,9 +14,11 @@ const userSchema = new mongoose.Schema({
   friendCode: { type: String, unique: true, sparse: true },
   publicKey: { type: String, default: '' },
   keyBackup: { salt: String, nonce: String, cipher: String },
-  globalRole: { type: String, enum: ['User', 'SuperAdmin'], default: 'User' },
-  lastActiveAt: { type: Date, default: Date.now },
-  inactivityEmailSentAt: { type: Date, default: null }
+  lastActiveAt: { type: Date, default: Date.now },   // used for the inactivity e-mail
+  resetTokenHash: { type: String, default: '', select: false },   // SHA-256 of the password-reset token (the token itself is only in the e-mail)
+  resetTokenExpires: { type: Date, select: false },
+  serverKey: { type: String, default: '', select: false },        // private key wrapped with KEY_WRAP_SECRET (accounts created with Google: no passphrase needed)
+  globalRole: { type: String, enum: ['User', 'SuperAdmin'], default: 'User' } 
 }, { timestamps: true });
 
 // FIX: Removed 'next' parameter. Modern Mongoose handles async hooks automatically.

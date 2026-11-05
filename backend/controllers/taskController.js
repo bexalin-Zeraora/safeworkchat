@@ -2,7 +2,9 @@ const Task = require('../models/Task');
 const TaskActivity = require('../models/TaskActivity');
 const GroupMember = require('../models/GroupMember');
 const path = require('path');
-const { notifyUser, postSystemMessage, fmtDate, sendEmail } = require('../utils_notify');
+const mail = require('../utils_mail');
+const storage = require('../utils_storage');
+const { notifyUser, postSystemMessage, fmtDate } = require('../utils_notify');
 const { DEFAULT_STAGES } = Task;
 
 const STATUSES = ['To Do', 'In Progress', 'Completed'];
@@ -23,6 +25,15 @@ function buildPhases(body) {
   } else names = DEFAULT_STAGES.slice();
   if (names.length < 2 || names.length > 100 || names.some((x) => x.length > 60)) return null;
   return names;
+}
+// e-mail the assignee (once per task + person; failures are logged and never break the request)
+async function emailAssigned(task, assignee, assignerName, groupId) {
+  try {
+    if (!assignee || !assignee.email) return;
+    const group = await require('../models/Group').findById(groupId).select('name');
+    const e = mail.taskEmail('task_assigned', { task, assigneeName: assignee.username, groupName: group ? group.name : '', assignerName });
+    await mail.sendOnce({ key: `task_assigned:${task._id}:${assignee._id}`, type: 'task_assigned', userId: assignee._id, taskId: task._id, groupId, to: assignee.email, ...e });
+  } catch (e) { console.error('Assignment e-mail failed:', e.message); }
 }
 const isId = (v) => typeof v === 'string' && /^[a-f0-9]{24}$/i.test(v);
 
@@ -90,7 +101,7 @@ const createTask = async (req, res) => {
       await notifyUser(io, { userId: assignedTo, type: 'task_assigned', title: 'New task assigned to you',
         body: `${req.user.username} assigned you “${task.title}” · due ${fmtDate(task.dueDate)}.`, link: `/pages/tasks.html?id=${task._id}`, taskId: task._id, groupId });
     }
-    if (assignee?.email) sendEmail({ to: assignee.email, subject: `New SafeWorkChat task: ${task.title}`, text: `Hello ${assignee.username},\n\n${req.user.username} assigned you a task in SafeWorkChat.\n\nTask: ${task.title}\nDescription: ${description || 'Not provided'}\nPriority: ${task.priority}\nDeadline: ${fmtDate(task.dueDate)}\n\nPlease sign in to SafeWorkChat to view and update the task.` }).catch(e => console.error('Task assignment email failed:', e.message));
+    if (String(assignedTo) !== String(req.user._id)) emailAssigned(task, assignee, req.user.username, groupId);   // not awaited: the response does not wait for the mail server
     if (io) io.to(String(groupId)).emit('taskUpdated', { taskId: task._id });
 
     res.status(201).json(task);
@@ -152,12 +163,12 @@ const updateTask = async (req, res) => {
 
     if (reassignedTo) {
       const newUser = await require('../models/User').findById(reassignedTo).select('username email');
+      if (String(reassignedTo) !== String(req.user._id)) emailAssigned(task, newUser, req.user.username, task.groupId);
       await postSystemMessage(io, task.groupId, req.user._id, `🔁 ${req.user.username} reassigned “${task.title}” from ${oldAssigneeName} to ${newUser.username} · due ${fmtDate(task.dueDate)}.`, `/pages/tasks.html?id=${task._id}`);
       if (String(reassignedTo) !== String(req.user._id)) {
         await notifyUser(io, { userId: reassignedTo, type: 'task_reassigned', title: 'A task was assigned to you',
           body: `${req.user.username} assigned you “${task.title}” · due ${fmtDate(task.dueDate)}.`, link: `/pages/tasks.html?id=${task._id}`, taskId: task._id, groupId: task.groupId });
       }
-      if (newUser?.email) sendEmail({ to: newUser.email, subject: `SafeWorkChat task assigned: ${task.title}`, text: `Hello ${newUser.username},\n\n${req.user.username} assigned you a task in SafeWorkChat.\n\nTask: ${task.title}\nDeadline: ${fmtDate(task.dueDate)}\n\nPlease sign in to view the task.` }).catch(e => console.error('Task reassignment email failed:', e.message));
     }
     if (io) io.to(String(task.groupId)).emit('taskUpdated', { taskId: task._id });
     res.json(task);
@@ -330,7 +341,7 @@ const downloadFile = async (req, res) => {
     if (!isId(req.params.activityId)) return res.status(404).json({ message: 'File not found' });
     const act = await TaskActivity.findOne({ _id: req.params.activityId, taskId: ctx.task._id });
     if (!act || !act.file || !act.file.filename) return res.status(404).json({ message: 'File not found' });
-    const file = path.join(__dirname, '..', 'uploads', path.basename(act.file.filename));
+    const file = path.join(storage.BASE, path.basename(act.file.filename));
     const ext = path.extname(file).toLowerCase();
     if (req.query.inline === '1' && INLINE[ext]) {            // safe types can be previewed in the browser
       res.set({ 'Content-Type': INLINE[ext], 'Content-Disposition': 'inline', 'X-Content-Type-Options': 'nosniff' });

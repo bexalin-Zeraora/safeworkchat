@@ -19,7 +19,7 @@
   ];
   const bn = document.createElement('nav');
   bn.className = 'bn';
-  bn.innerHTML = items.map(([h, i, l]) => `<a href="${h}" class="${here === h || (l === 'More' && ['/pages/calendar.html', '/pages/documents.html'].includes(here)) ? 'on' : ''}"><i class="fas ${i}"></i>${l}</a>`).join('');
+  bn.innerHTML = items.map(([h, i, l]) => `<a href="${h}" class="${here === h || (l === 'More' && ['/pages/calendar.html', '/pages/documents.html', '/pages/files.html'].includes(here)) ? 'on' : ''}"><i class="fas ${i}"></i>${l}</a>`).join('');
   document.body.appendChild(bn);
 
   const tb = document.querySelector('.tb');

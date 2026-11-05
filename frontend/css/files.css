@@ -1,0 +1,41 @@
+/* Group Files page, multi-select chips, document extras. Uses the app's existing colour variables. */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip{display:inline-flex;align-items:center;gap:6px;background:#eef6f2;color:var(--g2);border-radius:999px;padding:3px 6px 3px 4px;font-size:.78rem;max-width:100%}
+.chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip button{border:0;background:none;color:inherit;font-size:1rem;line-height:1;padding:0 4px;cursor:pointer}
+.pick-list{max-height:240px;overflow:auto;border:1px solid var(--bd);border-radius:8px;padding:6px;margin-top:6px}
+.pick-list .up-opt{margin-bottom:4px}
+.pick-list .up-opt .chk{width:18px;height:18px;border:2px solid var(--bd);border-radius:5px;flex:none;display:flex;align-items:center;justify-content:center;font-size:.65rem;color:#fff}
+.pick-list .up-opt.on .chk{background:var(--g);border-color:var(--g)}
+.pick-list .em{display:block;font-size:.72rem;color:var(--mut)}
+.pick-bar{display:flex;gap:10px;align-items:center;font-size:.78rem;margin-top:6px;flex-wrap:wrap}
+.pick-bar a{color:var(--g2);font-weight:600;text-decoration:none}
+.mem-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+
+.fbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.fbar .fld{margin:0;flex:1 1 160px;min-width:0}
+.fbar select.fld{flex:0 1 150px}
+.frow{display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--bd)}
+.frow:last-child{border:0}
+.frow .fi{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex:none;background:#eef6f2;color:var(--g2)}
+.frow .fi.image{background:#e8f0ff;color:#3b6fd8}.frow .fi.pdf{background:#fde8e8;color:var(--red)}
+.frow .nm{font-size:.88rem;font-weight:600;word-break:break-word}
+.frow small{display:block;color:var(--mut);font-size:.72rem}
+.frow .ac{margin-left:auto;display:flex;gap:6px;flex:none}
+.frow .ac button{border:1px solid var(--bd);background:transparent;color:var(--tx);border-radius:6px;padding:4px 9px;font-size:.78rem;cursor:pointer}
+.frow .ac button.del{color:var(--red)}
+.drop{border:2px dashed var(--bd);border-radius:10px;padding:14px;text-align:center;font-size:.82rem;color:var(--mut);margin-bottom:10px}
+.drop.over{border-color:var(--g);background:#f1faf6}
+.pv{width:100%;min-height:60vh;border:0;border-radius:8px;background:#f4f6f7}
+.pvimg{max-width:100%;max-height:70vh;display:block;margin:0 auto;border-radius:8px}
+.pvtxt{white-space:pre-wrap;word-break:break-word;max-height:70vh;overflow:auto;font-size:.82rem;background:#f4f6f7;border-radius:8px;padding:12px}
+.note{background:#fff3dc;color:#8a5a0a;border-radius:8px;padding:8px 12px;font-size:.8rem;margin-bottom:10px}
+.pills2{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+.pills2 button{border:1px solid var(--bd);background:transparent;color:var(--tx);border-radius:999px;padding:3px 12px;font-size:.78rem;cursor:pointer}
+.pills2 button.on{background:var(--g);border-color:var(--g);color:#fff}
+.sc-tag{font-size:.65rem;font-weight:600;padding:1px 7px;border-radius:5px;background:#e8f0ff;color:#3b6fd8;margin-left:6px}
+.sc-tag.task{background:#fff3dc;color:#c27d0e}
+[data-theme=dark] .chip,[data-theme=dark] .frow .fi{background:#16372f;color:#7fe0b3}
+[data-theme=dark] .pv,[data-theme=dark] .pvtxt,[data-theme=dark] .drop.over{background:#0f1f22}
+[data-theme=dark] .frow .ac button,[data-theme=dark] .pills2 button{color:var(--tx)}
+@media(max-width:600px){.frow{flex-wrap:wrap}.frow .ac{margin-left:48px;width:100%}.pv{min-height:50vh}}
